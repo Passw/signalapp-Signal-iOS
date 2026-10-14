@@ -2126,6 +2126,7 @@
 		D904CDD1306C774000EC6C4E /* LocalFileBackupAttachmentMetadataStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = D904CDCF306C774000EC6C4E /* LocalFileBackupAttachmentMetadataStore.swift */; };
 		D904CDD3306C77C200EC6C4E /* LocalFileBackupAttachmentMetadataManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D904CDD2306C77C200EC6C4E /* LocalFileBackupAttachmentMetadataManagerTests.swift */; };
 		D904CDD5306D769C00EC6C4E /* LocalFileBackupAttachmentNaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = D904CDD4306D769700EC6C4E /* LocalFileBackupAttachmentNaming.swift */; };
+		D904CDDB306D97F900EC6C4E /* ModalCircularProgressViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D904CDDA306D97F900EC6C4E /* ModalCircularProgressViewController.swift */; };
 		D90AA3322CC9616B00021CB0 /* chat_item_standard_message_special_attachments_12.txtproto in Resources */ = {isa = PBXBuildFile; fileRef = D90AA2222CC9616A00021CB0 /* chat_item_standard_message_special_attachments_12.txtproto */; };
 		D90AA3332CC9616B00021CB0 /* account_data_03.binproto in Resources */ = {isa = PBXBuildFile; fileRef = D90AA0772CC9616A00021CB0 /* account_data_03.binproto */; };
 		D90AA3342CC9616B00021CB0 /* chat_item_sticker_message_08.binproto in Resources */ = {isa = PBXBuildFile; fileRef = D90AA2B52CC9616A00021CB0 /* chat_item_sticker_message_08.binproto */; };
@@ -6590,6 +6591,7 @@
 		D904CDCF306C774000EC6C4E /* LocalFileBackupAttachmentMetadataStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalFileBackupAttachmentMetadataStore.swift; sourceTree = "<group>"; };
 		D904CDD2306C77C200EC6C4E /* LocalFileBackupAttachmentMetadataManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalFileBackupAttachmentMetadataManagerTests.swift; sourceTree = "<group>"; };
 		D904CDD4306D769700EC6C4E /* LocalFileBackupAttachmentNaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalFileBackupAttachmentNaming.swift; sourceTree = "<group>"; };
+		D904CDDA306D97F900EC6C4E /* ModalCircularProgressViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCircularProgressViewController.swift; sourceTree = "<group>"; };
 		D90AA0712CC9616A00021CB0 /* account_data_00.binproto */ = {isa = PBXFileReference; lastKnownFileType = file; path = account_data_00.binproto; sourceTree = "<group>"; };
 		D90AA0722CC9616A00021CB0 /* account_data_00.txtproto */ = {isa = PBXFileReference; lastKnownFileType = text; path = account_data_00.txtproto; sourceTree = "<group>"; };
 		D90AA0732CC9616A00021CB0 /* account_data_01.binproto */ = {isa = PBXFileReference; lastKnownFileType = file; path = account_data_01.binproto; sourceTree = "<group>"; };
@@ -9746,6 +9748,7 @@
 				508F0345296F72F4001D88D0 /* CustomCellBackgroundColor.swift */,
 				880C2E01262A19DE006650B6 /* InteractiveSheetViewController.swift */,
 				34A95591271B510500B05242 /* ModalActivityIndicatorViewController.swift */,
+				D904CDDA306D97F900EC6C4E /* ModalCircularProgressViewController.swift */,
 				B9448F39305B2E9100FBC57E /* NavStackSheetViewController.swift */,
 				665EF86C290C385B00F490D2 /* OWSNavigationController.swift */,
 				765283AD2A00D8B4004583A9 /* OWSTableContents.swift */,
@@ -19361,6 +19364,7 @@
 				34EB0E722629DC2B00B62DC3 /* MessageSelectionView.swift in Sources */,
 				34EB0CEB26289D8800B62DC3 /* MessageTimerView.swift in Sources */,
 				8829883C25B9FD9E00DEE1E3 /* MockConversationView.swift in Sources */,
+				D904CDDB306D97F900EC6C4E /* ModalCircularProgressViewController.swift in Sources */,
 				C14FB7E02EF3389300850EC5 /* MPCDeviceTransferAdvertiser.swift in Sources */,
 				C14FB7DE2EF3388200850EC5 /* MPCDeviceTransferBrowser.swift in Sources */,
 				C14FB7E82EF33BEB00850EC5 /* MPCDeviceTransferConnectionFactory.swift in Sources */,
