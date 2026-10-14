@@ -9,6 +9,7 @@ import SwiftUI
 import UIKit
 
 class LocalFileBackupsSettingsViewController: OWSTableViewController2 {
+    private let localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore
     private let localFileBackupExportJobRunner: LocalFileBackupExportJobRunner
     private let localFileBackupStore: LocalFileBackupStore
     private let db: DB
@@ -36,6 +37,7 @@ class LocalFileBackupsSettingsViewController: OWSTableViewController2 {
     private lazy var progressBarHostingController = UIHostingController(rootView: PulsingProgressBar(value: 0))
 
     init(
+        localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore,
         localFileBackupExportJobRunner: LocalFileBackupExportJobRunner,
         localFileBackupStore: LocalFileBackupStore,
         db: DB,
@@ -49,6 +51,7 @@ class LocalFileBackupsSettingsViewController: OWSTableViewController2 {
         accountEntropyPoolManager: AccountEntropyPoolManager,
         tsAccountManager: TSAccountManager,
     ) {
+        self.localFileBackupAttachmentMetadataStore = localFileBackupAttachmentMetadataStore
         self.localFileBackupExportJobRunner = localFileBackupExportJobRunner
         self.localFileBackupStore = localFileBackupStore
         self.db = db
@@ -699,7 +702,14 @@ class LocalFileBackupsSettingsViewController: OWSTableViewController2 {
 
                 let cleanUpState: () -> Void = { [weak self] in
                     guard let self else { return }
-                    db.write { [localFileBackupStore, localFileBackupExportJobStore, clvLocalFileBackupExportProgressViewStore, accountEntropyPoolManager] tx in
+
+                    db.write { [
+                        localFileBackupAttachmentMetadataStore,
+                        localFileBackupStore,
+                        localFileBackupExportJobStore,
+                        clvLocalFileBackupExportProgressViewStore,
+                        accountEntropyPoolManager,
+                    ] tx in
                         localFileBackupStore.setLocalBackupsEnabled(value: false, tx: tx)
 
                         // Clear any reminders or details associated with the local backup.
@@ -708,7 +718,7 @@ class LocalFileBackupsSettingsViewController: OWSTableViewController2 {
                         localFileBackupStore.clearChooseNewLocalBackupLocation(tx: tx)
                         localFileBackupStore.clearShouldPromptUserToEnableLocalBackups(tx: tx)
                         localFileBackupStore.clearArchiveBookmarkData(tx: tx)
-                        localFileBackupStore.clearLastEnumeratedAttachmentRowId(tx: tx)
+                        localFileBackupAttachmentMetadataStore.clearLastEnumeratedAttachmentRowId(tx: tx)
                         localFileBackupStore.clearLastBackupEnabledDetails(tx: tx)
                         localFileBackupStore.clearErrorStateStore(tx: tx)
                         localFileBackupExportJobStore.wipe(tx: tx)

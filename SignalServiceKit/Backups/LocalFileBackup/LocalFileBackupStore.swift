@@ -14,7 +14,6 @@ public struct LocalFileBackupStore {
     private enum StoreKeys {
         static let archiveBookmarkDataKey = "archiveBookmarkData"
         static let restoreBookmarkDataKey = "restoreBookmarkData"
-        static let lastEnumeratedAttachmentIdKey = "lastEnumeratedAttachmentId"
         static let shouldPromptUserToEnableLocalBackupsKey = "shouldPromptUserToEnableLocalBackups"
         static let shouldPromptUserToChooseNewLocationKey = "shouldPromptUserToChooseNewLocation"
         static let haveEverBeenEnabled = "haveEverBeenEnabledKey"
@@ -56,54 +55,6 @@ public struct LocalFileBackupStore {
         failIfThrows {
             try BackupLocalFileAttachmentExportRecord
                 .fetchCount(tx.database)
-        }
-    }
-
-    func attachmentCountSinceLastFetched(tx: DBReadTransaction) -> Int {
-        failIfThrows {
-            var query = Attachment.Record
-                .filter(Column(Attachment.Record.CodingKeys.plaintextHash) != nil)
-            if let lastId = fetchLastEnumeratedAttachmentRowId(tx: tx) {
-                query = query.filter(Column(Attachment.Record.CodingKeys.sqliteId) > lastId)
-            }
-            return try query.fetchCount(tx.database)
-        }
-    }
-
-    func metadataRecord(attachmentId: Attachment.IDType, failIfNotExists: Bool, tx: DBReadTransaction) -> BackupLocalFileAttachmentMetadataRecord? {
-        failIfThrows {
-            guard
-                let metadata = try BackupLocalFileAttachmentMetadataRecord
-                    .filter(key: attachmentId)
-                    .fetchOne(tx.database)
-            else {
-                if failIfNotExists {
-                    // TODO: Store error to present to beta user
-                    owsFailBeta("Local file backup attachment in the import queue is missing metadata")
-                }
-                return nil
-            }
-            return metadata
-        }
-    }
-
-    func insertNewMetadataIfNeeded(attachmentId: Attachment.IDType, unencryptedByteCount: UInt32, localKey: Data?, tx: DBWriteTransaction) {
-        let existingMetadata = metadataRecord(attachmentId: attachmentId, failIfNotExists: false, tx: tx)
-        if existingMetadata == nil {
-            let localKeyToInsert: Data
-            if let localKey {
-                localKeyToInsert = localKey
-            } else {
-                localKeyToInsert = Randomness.generateRandomBytes(64)
-            }
-            let metadataToInsert = BackupLocalFileAttachmentMetadataRecord(
-                attachmentRowId: attachmentId,
-                localKey: localKeyToInsert,
-                unencryptedByteCount: unencryptedByteCount,
-            )
-            failIfThrows {
-                try metadataToInsert.insert(tx.database)
-            }
         }
     }
 
@@ -173,18 +124,6 @@ public struct LocalFileBackupStore {
     }
 
     // MARK: - KVStore
-
-    func fetchLastEnumeratedAttachmentRowId(tx: DBReadTransaction) -> Int64? {
-        kvStore.fetchValue(Int64.self, forKey: StoreKeys.lastEnumeratedAttachmentIdKey, tx: tx)
-    }
-
-    public func clearLastEnumeratedAttachmentRowId(tx: DBWriteTransaction) {
-        kvStore.removeValue(forKey: StoreKeys.lastEnumeratedAttachmentIdKey, tx: tx)
-    }
-
-    func updateLastEnumeratedAttachmentRowId(_ attachmentId: Attachment.IDType, tx: DBWriteTransaction) {
-        kvStore.writeValue(attachmentId, forKey: StoreKeys.lastEnumeratedAttachmentIdKey, tx: tx)
-    }
 
     func fetchArchiveBookmarkData(tx: DBReadTransaction) -> SecurityScopedBookmark? {
         guard let data = kvStore.fetchValue(Data.self, forKey: StoreKeys.archiveBookmarkDataKey, tx: tx) else {

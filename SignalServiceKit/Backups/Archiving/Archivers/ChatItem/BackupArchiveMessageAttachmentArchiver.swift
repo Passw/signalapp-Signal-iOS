@@ -12,17 +12,20 @@ class BackupArchiveMessageAttachmentArchiver {
     private let attachmentManager: AttachmentManager
     private let attachmentStore: AttachmentStore
     private let backupAttachmentDownloadScheduler: BackupAttachmentDownloadScheduler
+    private let localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore
     private let localFileBackupStore: LocalFileBackupStore
 
     init(
         attachmentManager: AttachmentManager,
         attachmentStore: AttachmentStore,
         backupAttachmentDownloadScheduler: BackupAttachmentDownloadScheduler,
+        localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore,
         localFileBackupStore: LocalFileBackupStore,
     ) {
         self.attachmentManager = attachmentManager
         self.attachmentStore = attachmentStore
         self.backupAttachmentDownloadScheduler = backupAttachmentDownloadScheduler
+        self.localFileBackupAttachmentMetadataStore = localFileBackupAttachmentMetadataStore
         self.localFileBackupStore = localFileBackupStore
     }
 
@@ -37,7 +40,7 @@ class BackupArchiveMessageAttachmentArchiver {
         for referencedAttachment in referencedAttachments {
             let pointerProto = referencedAttachment.asBackupFilePointer(
                 context: context,
-                localFileBackupStore: localFileBackupStore,
+                localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
             )
 
             var attachmentProto = BackupProto_MessageAttachment()
@@ -63,21 +66,30 @@ class BackupArchiveMessageAttachmentArchiver {
         referencedAttachment: ReferencedAttachment,
         context: BackupArchive.ArchivingContext,
     ) -> BackupProto_FilePointer {
-        return referencedAttachment.asBackupFilePointer(context: context, localFileBackupStore: localFileBackupStore)
+        return referencedAttachment.asBackupFilePointer(
+            context: context,
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
+        )
     }
 
     func archiveLinkPreviewAttachment(
         referencedAttachment: ReferencedAttachment,
         context: BackupArchive.ArchivingContext,
     ) -> BackupProto_FilePointer {
-        return referencedAttachment.asBackupFilePointer(context: context, localFileBackupStore: localFileBackupStore)
+        return referencedAttachment.asBackupFilePointer(
+            context: context,
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
+        )
     }
 
     func archiveQuotedReplyThumbnailAttachment(
         referencedAttachment: ReferencedAttachment,
         context: BackupArchive.ArchivingContext,
     ) -> BackupProto_MessageAttachment {
-        let pointerProto = referencedAttachment.asBackupFilePointer(context: context, localFileBackupStore: localFileBackupStore)
+        let pointerProto = referencedAttachment.asBackupFilePointer(
+            context: context,
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
+        )
 
         var attachmentProto = BackupProto_MessageAttachment()
         attachmentProto.pointer = pointerProto
@@ -92,14 +104,20 @@ class BackupArchiveMessageAttachmentArchiver {
         referencedAttachment: ReferencedAttachment,
         context: BackupArchive.ArchivingContext,
     ) -> BackupProto_FilePointer {
-        return referencedAttachment.asBackupFilePointer(context: context, localFileBackupStore: localFileBackupStore)
+        return referencedAttachment.asBackupFilePointer(
+            context: context,
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
+        )
     }
 
     func archiveStickerAttachment(
         referencedAttachment: ReferencedAttachment,
         context: BackupArchive.ArchivingContext,
     ) -> BackupProto_FilePointer {
-        return referencedAttachment.asBackupFilePointer(context: context, localFileBackupStore: localFileBackupStore)
+        return referencedAttachment.asBackupFilePointer(
+            context: context,
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
+        )
     }
 
     // MARK: Restoring -
@@ -401,7 +419,7 @@ extension ReferencedAttachment {
 
     func asBackupFilePointer(
         context: BackupArchive.ArchivingContext,
-        localFileBackupStore: LocalFileBackupStore,
+        localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore,
     ) -> BackupProto_FilePointer {
         var proto = BackupProto_FilePointer()
         proto.contentType = attachment.mimeType
@@ -434,7 +452,7 @@ extension ReferencedAttachment {
 
         proto.locatorInfo = self.asBackupFilePointerLocatorInfo(
             context: context,
-            localFileBackupStore: localFileBackupStore,
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
         )
 
         if proto.locatorInfo.hasLocalKey {
@@ -463,7 +481,7 @@ extension ReferencedAttachment {
 
     private func asBackupFilePointerLocatorInfo(
         context: BackupArchive.ArchivingContext,
-        localFileBackupStore: LocalFileBackupStore,
+        localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore,
     ) -> BackupProto_FilePointer.LocatorInfo {
         var locatorInfo = BackupProto_FilePointer.LocatorInfo()
 
@@ -510,9 +528,8 @@ extension ReferencedAttachment {
         if
             context.isCollectingLocalFileBackupAttachments,
             let attachmentStream = attachment.asStream(),
-            let localKey = localFileBackupStore.metadataRecord(
+            let localKey = localFileBackupAttachmentMetadataStore.metadataRecord(
                 attachmentId: attachment.id,
-                failIfNotExists: false,
                 tx: context.tx,
             )?.localKey
         {

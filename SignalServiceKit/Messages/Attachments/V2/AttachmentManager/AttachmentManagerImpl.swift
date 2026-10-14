@@ -9,6 +9,7 @@ public class AttachmentManagerImpl: AttachmentManager {
     private let attachmentStore: AttachmentStore
     private let backupAttachmentUploadScheduler: BackupAttachmentUploadScheduler
     private let dateProvider: DateProvider
+    private let localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore
     private let orphanedAttachmentCleaner: OrphanedAttachmentCleaner
     private let orphanedAttachmentStore: OrphanedAttachmentStore
     private let orphanedBackupAttachmentScheduler: OrphanedBackupAttachmentScheduler
@@ -21,6 +22,7 @@ public class AttachmentManagerImpl: AttachmentManager {
         attachmentStore: AttachmentStore,
         backupAttachmentUploadScheduler: BackupAttachmentUploadScheduler,
         dateProvider: @escaping DateProvider,
+        localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore,
         orphanedAttachmentCleaner: OrphanedAttachmentCleaner,
         orphanedAttachmentStore: OrphanedAttachmentStore,
         orphanedBackupAttachmentScheduler: OrphanedBackupAttachmentScheduler,
@@ -32,6 +34,7 @@ public class AttachmentManagerImpl: AttachmentManager {
         self.attachmentStore = attachmentStore
         self.backupAttachmentUploadScheduler = backupAttachmentUploadScheduler
         self.dateProvider = dateProvider
+        self.localFileBackupAttachmentMetadataStore = localFileBackupAttachmentMetadataStore
         self.orphanedAttachmentCleaner = orphanedAttachmentCleaner
         self.orphanedAttachmentStore = orphanedAttachmentStore
         self.orphanedBackupAttachmentScheduler = orphanedBackupAttachmentScheduler
@@ -453,7 +456,7 @@ public class AttachmentManagerImpl: AttachmentManager {
             if proto.locatorInfo.hasLocalKey {
                 localFileBackupStore.insertImportRecord(attachmentId: attachment.id, tx: tx)
 
-                localFileBackupStore.insertNewMetadataIfNeeded(
+                localFileBackupAttachmentMetadataStore.insertNewMetadataIfNeeded(
                     attachmentId: attachment.id,
                     unencryptedByteCount: proto.locatorInfo.size,
                     localKey: proto.locatorInfo.localKey,

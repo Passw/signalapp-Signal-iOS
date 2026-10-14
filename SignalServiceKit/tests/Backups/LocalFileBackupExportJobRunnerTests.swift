@@ -13,6 +13,7 @@ struct LocalFileBackupExportJobRunnerTests {
     private let backupsURL: URL
     private let backupExportLock: BackupExportLock
     private let localFileBackupExportJobStore: LocalFileBackupExportJobStore
+    private let localFileBackupAttachmentMetadataManager: LocalFileBackupAttachmentMetadataManager
     private let localFileBackupManager: LocalFileBackupManager
 
     init() {
@@ -27,13 +28,21 @@ struct LocalFileBackupExportJobRunnerTests {
         backupsURL = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(UUID().uuidString)
         let securityScopedBookmark = SecurityScopedBookmarkAccessMock(hasAccess: true, url: backupsURL)
 
+        let attachmentStore = AttachmentStore()
+        let localFileBackupAttachmentMetadataStore = LocalFileBackupAttachmentMetadataStore()
+        self.localFileBackupAttachmentMetadataManager = LocalFileBackupAttachmentMetadataManager(
+            attachmentStore: attachmentStore,
+            db: db,
+            metadataStore: localFileBackupAttachmentMetadataStore,
+        )
         self.localFileBackupManager = LocalFileBackupManager(
             appReadiness: AppReadinessMock(),
             db: db,
             dateProvider: dateProvider,
-            attachmentStore: AttachmentStore(),
+            attachmentStore: attachmentStore,
             attachmentValidator: AttachmentContentValidatorMock(),
             orphanedAttachmentCleaner: OrphanedAttachmentCleanerImpl(dateProvider: dateProvider, db: db),
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
             localFileBackupStore: localFileBackupStore,
             securityScopedBookmarkAccess: securityScopedBookmark,
             restoreProgress: LocalFileBackupAttachmentRestoreProgress(),
@@ -56,6 +65,7 @@ struct LocalFileBackupExportJobRunnerTests {
                 backupArchiveManager: BackupArchiveManagerMock(),
                 db: db,
                 tsAccountManager: MockTSAccountManager(),
+                localFileBackupAttachmentMetadataManager: localFileBackupAttachmentMetadataManager,
                 localFileBackupManager: localFileBackupManager,
                 securityScopedBookmarkAccess: securityScopedBookmark,
                 localFileBackupExportJobStore: localFileBackupExportJobStore,
@@ -94,7 +104,7 @@ struct LocalFileBackupExportJobRunnerTests {
             return (id1, id2)
         }
 
-        await localFileBackupManager.ensureAttachmentMetadataExists(progressSink: nil)
+        try await localFileBackupAttachmentMetadataManager.ensureAttachmentMetadataExists(progressSink: nil)
 
         let localFileBackupAttachmentCollector = LocalFileBackupAttachmentCollector()
         localFileBackupAttachmentCollector.append(id: id1)

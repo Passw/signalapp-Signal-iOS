@@ -60,6 +60,7 @@ public class BackupListMediaManagerTests {
         backupSettingsStore: backupSettingsStore,
         dateProvider: dateProvider,
         db: db,
+        localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore(),
         notificationPresenter: notificationPresenter,
         orphanedBackupAttachmentStore: orphanedBackupAttachmentStore,
         remoteConfigManager: remoteConfigManager,

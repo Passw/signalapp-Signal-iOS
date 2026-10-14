@@ -373,6 +373,7 @@ public class GRDBSchemaMigrator {
         case addBlockedAt
         case migrateLegacyMentionNotificationMode
         case addLastSnapshotAt
+        case removeLocalFileBackupLastEnumeratedAttachmentId
 
         // NOTE: Every time we add a migration id, consider
         // incrementing grdbSchemaVersionLatest.
@@ -5721,6 +5722,18 @@ public class GRDBSchemaMigrator {
                 $0.add(column: "lastSnapshotAt", .integer).notNull().defaults(to: 0)
                 $0.add(column: "lastSnapshotVersion", .integer).notNull().defaults(to: 0)
             }
+            return .success(())
+        }
+
+        migrator.registerMigration(.removeLocalFileBackupLastEnumeratedAttachmentId) { tx in
+            // Moved to a new collection; enumeration will start over.
+            try tx.database.execute(
+                sql: """
+                DELETE FROM "keyvalue"
+                WHERE "collection" = 'LocalFileBackups' AND "key" = 'lastEnumeratedAttachmentId'
+                """,
+            )
+
             return .success(())
         }
 

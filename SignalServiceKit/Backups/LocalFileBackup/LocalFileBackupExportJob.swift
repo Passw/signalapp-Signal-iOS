@@ -41,6 +41,7 @@ class LocalFileBackupExportJob {
     private let db: DB
     private let logger: PrefixedLogger
     private let tsAccountManager: TSAccountManager
+    private let localFileBackupAttachmentMetadataManager: LocalFileBackupAttachmentMetadataManager
     private let localFileBackupManager: LocalFileBackupManager
     private let securityScopedBookmarkAccess: SecurityScopedBookmarkAccess
     private let localFileBackupExportJobStore: LocalFileBackupExportJobStore
@@ -51,6 +52,7 @@ class LocalFileBackupExportJob {
         backupArchiveManager: BackupArchiveManager,
         db: DB,
         tsAccountManager: TSAccountManager,
+        localFileBackupAttachmentMetadataManager: LocalFileBackupAttachmentMetadataManager,
         localFileBackupManager: LocalFileBackupManager,
         securityScopedBookmarkAccess: SecurityScopedBookmarkAccess,
         localFileBackupExportJobStore: LocalFileBackupExportJobStore,
@@ -61,6 +63,7 @@ class LocalFileBackupExportJob {
         self.db = db
         self.logger = PrefixedLogger(prefix: "[LocalFileBackups][ExportJob]")
         self.tsAccountManager = tsAccountManager
+        self.localFileBackupAttachmentMetadataManager = localFileBackupAttachmentMetadataManager
         self.localFileBackupManager = localFileBackupManager
         self.securityScopedBookmarkAccess = securityScopedBookmarkAccess
         self.localFileBackupExportJobStore = localFileBackupExportJobStore
@@ -126,7 +129,9 @@ class LocalFileBackupExportJob {
             switch resumptionPoint {
             case nil:
                 logger.info("Ensuring attachment metadata exists...")
-                await localFileBackupManager.ensureAttachmentMetadataExists(progressSink: progress.child(for: .attachmentMetadataPrep))
+                try await localFileBackupAttachmentMetadataManager.ensureAttachmentMetadataExists(
+                    progressSink: progress.child(for: .attachmentMetadataPrep),
+                )
 
                 logger.info("Exporting backup...")
                 let metadata = try await backupArchiveManager.exportEncryptedBackup(

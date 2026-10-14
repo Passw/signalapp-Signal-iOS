@@ -11,23 +11,23 @@ class BackupArchiveChatStyleArchiver {
     private let attachmentStore: AttachmentStore
     private let backupAttachmentDownloadScheduler: BackupAttachmentDownloadScheduler
     private let chatColorSettingStore: ChatColorSettingStore
+    private let localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore
     private let wallpaperStore: WallpaperStore
-    private let localFileBackupStore: LocalFileBackupStore
 
     init(
         attachmentManager: AttachmentManager,
         attachmentStore: AttachmentStore,
         backupAttachmentDownloadScheduler: BackupAttachmentDownloadScheduler,
         chatColorSettingStore: ChatColorSettingStore,
+        localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore,
         wallpaperStore: WallpaperStore,
-        localFileBackupStore: LocalFileBackupStore,
     ) {
         self.attachmentManager = attachmentManager
         self.attachmentStore = attachmentStore
         self.backupAttachmentDownloadScheduler = backupAttachmentDownloadScheduler
         self.chatColorSettingStore = chatColorSettingStore
+        self.localFileBackupAttachmentMetadataStore = localFileBackupAttachmentMetadataStore
         self.wallpaperStore = wallpaperStore
-        self.localFileBackupStore = localFileBackupStore
     }
 
     // MARK: - Custom Chat Colors
@@ -432,7 +432,10 @@ class BackupArchiveChatStyleArchiver {
             return .success(nil)
         }
 
-        return .success(referencedAttachment.asBackupFilePointer(context: context, localFileBackupStore: localFileBackupStore))
+        return .success(referencedAttachment.asBackupFilePointer(
+            context: context,
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
+        ))
     }
 
     private func restoreWallpaperAttachment(

@@ -16,6 +16,7 @@ struct LocalFileBackupManagerTests {
     private let localFileBackupManager: LocalFileBackupManager
     private let db = InMemoryDB()
     private let attachmentStore = AttachmentStore()
+    private let localFileBackupAttachmentMetadataManager: LocalFileBackupAttachmentMetadataManager
     private let backupArchiveManager = BackupArchiveManagerMock()
 
     init() {
@@ -27,7 +28,13 @@ struct LocalFileBackupManagerTests {
             db: db,
             orphanedAttachmentCleaner: orphanedAttachmentCleaner,
         )
+        let localFileBackupAttachmentMetadataStore = LocalFileBackupAttachmentMetadataStore()
 
+        self.localFileBackupAttachmentMetadataManager = LocalFileBackupAttachmentMetadataManager(
+            attachmentStore: attachmentStore,
+            db: db,
+            metadataStore: localFileBackupAttachmentMetadataStore,
+        )
         self.localFileBackupManager = LocalFileBackupManager(
             appReadiness: AppReadinessMock(),
             db: db,
@@ -35,37 +42,11 @@ struct LocalFileBackupManagerTests {
             attachmentStore: attachmentStore,
             attachmentValidator: validator,
             orphanedAttachmentCleaner: orphanedAttachmentCleaner,
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
             localFileBackupStore: LocalFileBackupStore(),
             securityScopedBookmarkAccess: SecurityScopedBookmarkAccessMock(hasAccess: true, url: nil),
             restoreProgress: LocalFileBackupAttachmentRestoreProgress(),
         )
-    }
-
-    @Test
-    func testEnsureMetadataExists() async throws {
-        let encryptedSize: UInt32 = 20
-        let unencryptedSize: UInt32 = 32
-
-        let mockAttachment = AttachmentStream.mock(
-            streamInfo: .mock(
-                encryptedByteCount: encryptedSize,
-                unencryptedByteCount: unencryptedSize,
-            ),
-        ).attachment
-
-        let id = db.write { tx in
-            LocalFileBackupTestSupport.insertMockAttachment(mockAttachment, tx: tx)
-        }
-
-        await localFileBackupManager.ensureAttachmentMetadataExists(progressSink: nil)
-
-        let metadata = try db.read { tx in
-            try BackupLocalFileAttachmentMetadataRecord
-                .filter(Column(BackupLocalFileAttachmentMetadataRecord.CodingKeys.attachmentRowId) == id)
-                .fetchOne(tx.database)
-        }
-
-        #expect(metadata != nil)
     }
 
     @Test
@@ -168,7 +149,7 @@ struct LocalFileBackupManagerTests {
             return (id1, id2)
         }
 
-        await localFileBackupManager.ensureAttachmentMetadataExists(progressSink: nil)
+        try await localFileBackupAttachmentMetadataManager.ensureAttachmentMetadataExists(progressSink: nil)
 
         let localFileBackupAttachmentCollector = LocalFileBackupAttachmentCollector()
         localFileBackupAttachmentCollector.append(id: id1)
@@ -251,7 +232,7 @@ struct LocalFileBackupManagerTests {
             mockAttachments.map { LocalFileBackupTestSupport.insertMockAttachment($0, tx: tx) }
         }
 
-        await localFileBackupManager.ensureAttachmentMetadataExists(progressSink: nil)
+        try await localFileBackupAttachmentMetadataManager.ensureAttachmentMetadataExists(progressSink: nil)
 
         let collector = LocalFileBackupAttachmentCollector()
         for id in ids {
@@ -476,7 +457,7 @@ struct LocalFileBackupManagerTests {
             return (id1, id2)
         }
 
-        await localFileBackupManager.ensureAttachmentMetadataExists(progressSink: nil)
+        try await localFileBackupAttachmentMetadataManager.ensureAttachmentMetadataExists(progressSink: nil)
 
         let localFileBackupAttachmentCollector = LocalFileBackupAttachmentCollector()
         localFileBackupAttachmentCollector.append(id: id1)

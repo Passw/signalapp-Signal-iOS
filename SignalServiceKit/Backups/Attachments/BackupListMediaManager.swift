@@ -105,6 +105,7 @@ class BackupListMediaManagerImpl: BackupListMediaManager {
     private let dateProvider: DateProvider
     private let db: any DB
     private let kvStore: KeyValueStore
+    private let localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore
     private let logger: PrefixedLogger
     private let notificationPresenter: NotificationPresenter
     private let orphanedBackupAttachmentStore: OrphanedBackupAttachmentStore
@@ -129,6 +130,7 @@ class BackupListMediaManagerImpl: BackupListMediaManager {
         backupSettingsStore: BackupSettingsStore,
         dateProvider: @escaping DateProvider,
         db: any DB,
+        localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore,
         notificationPresenter: NotificationPresenter,
         orphanedBackupAttachmentStore: OrphanedBackupAttachmentStore,
         remoteConfigManager: RemoteConfigManager,
@@ -151,6 +153,7 @@ class BackupListMediaManagerImpl: BackupListMediaManager {
         self.dateProvider = dateProvider
         self.db = db
         self.kvStore = KeyValueStore(collection: "ListBackupMediaManager")
+        self.localFileBackupAttachmentMetadataStore = localFileBackupAttachmentMetadataStore
         self.logger = PrefixedLogger(prefix: "[Backups]")
         self.notificationPresenter = notificationPresenter
         self.orphanedBackupAttachmentStore = orphanedBackupAttachmentStore
@@ -1033,9 +1036,8 @@ class BackupListMediaManagerImpl: BackupListMediaManager {
         // record if this attachment was restored from a local file backup.
         if
             fullsizeUnencryptedByteCount == nil,
-            let record = localFileBackupStore.metadataRecord(
+            let record = localFileBackupAttachmentMetadataStore.metadataRecord(
                 attachmentId: attachment.id,
-                failIfNotExists: false,
                 tx: tx,
             )
         {

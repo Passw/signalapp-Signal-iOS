@@ -131,6 +131,7 @@ public class RegistrationCoordinatorTest {
             attachmentStore: AttachmentStore(),
             attachmentValidator: AttachmentContentValidatorMock(),
             orphanedAttachmentCleaner: OrphanedAttachmentCleanerImpl(dateProvider: { Date() }, db: db),
+            localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore(),
             localFileBackupStore: LocalFileBackupStore(),
             securityScopedBookmarkAccess: SecurityScopedBookmarkAccessMock(hasAccess: true, url: nil),
             restoreProgress: LocalFileBackupAttachmentRestoreProgress(),

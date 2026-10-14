@@ -1209,15 +1209,42 @@ public struct AttachmentStore {
         }
     }
 
-    func attachmentRecordsWithPlaintextHash(lastEnumeratedAttachmentId: Attachment.IDType?, tx: DBReadTransaction) throws -> RecordCursor<Attachment.Record> {
-        var query = Attachment.Record
-            .filter(Column(Attachment.Record.CodingKeys.plaintextHash) != nil)
+    // MARK: -
+
+    func countAttachmentsWithPlaintextHash(
+        afterRowId: Attachment.IDType?,
+        tx: DBReadTransaction,
+    ) -> Int {
+        let query = attachmentsWithPlaintextHashQuery(afterRowId: afterRowId)
+
+        return failIfThrows {
+            try query.fetchCount(tx.database)
+        }
+    }
+
+    func attachmentsWithPlaintextHash(
+        afterRowId: Attachment.IDType?,
+        tx: DBReadTransaction,
+    ) -> FailIfThrowsRecordCursor<Attachment.Record> {
+        let query = attachmentsWithPlaintextHashQuery(afterRowId: afterRowId)
             .order(Column(Attachment.Record.CodingKeys.sqliteId))
 
-        if let lastEnumeratedAttachmentId {
-            query = query
-                .filter(Column(Attachment.Record.CodingKeys.sqliteId) > lastEnumeratedAttachmentId)
+        return FailIfThrowsRecordCursor {
+            return try query.fetchCursor(tx.database)
         }
-        return try query.fetchCursor(tx.database)
+    }
+
+    private func attachmentsWithPlaintextHashQuery(
+        afterRowId: Attachment.IDType?,
+    ) -> QueryInterfaceRequest<Attachment.Record> {
+        var query = Attachment.Record
+            .filter(Column(Attachment.Record.CodingKeys.plaintextHash) != nil)
+
+        if let afterRowId {
+            query = query
+                .filter(Column(Attachment.Record.CodingKeys.sqliteId) > afterRowId)
+        }
+
+        return query
     }
 }

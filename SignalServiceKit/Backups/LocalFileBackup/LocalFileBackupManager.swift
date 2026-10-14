@@ -64,6 +64,7 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
     private let attachmentStore: AttachmentStore
     private let attachmentValidator: AttachmentContentValidator
     private let orphanedAttachmentCleaner: OrphanedAttachmentCleaner
+    private let localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore
     private nonisolated let localFileBackupStore: LocalFileBackupStore
     private nonisolated let securityScopedBookmarkAccess: SecurityScopedBookmarkAccess
     private let restoreProgress: LocalFileBackupAttachmentRestoreProgress
@@ -78,7 +79,6 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
 
     public enum ProgressLabel {
         public static let writeQueuedAttachment = "writeQueuedAttachment"
-        public static let ensureAttachmentMetadataExists = "ensureAttachmentMetadataExists"
     }
 
     init(
@@ -88,6 +88,7 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
         attachmentStore: AttachmentStore,
         attachmentValidator: AttachmentContentValidator,
         orphanedAttachmentCleaner: OrphanedAttachmentCleaner,
+        localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore,
         localFileBackupStore: LocalFileBackupStore,
         securityScopedBookmarkAccess: SecurityScopedBookmarkAccess,
         restoreProgress: LocalFileBackupAttachmentRestoreProgress,
@@ -98,6 +99,7 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
         self.attachmentValidator = attachmentValidator
         self.orphanedAttachmentCleaner = orphanedAttachmentCleaner
         self.logger = PrefixedLogger(prefix: "[LocalFileBackups]")
+        self.localFileBackupAttachmentMetadataStore = localFileBackupAttachmentMetadataStore
         self.localFileBackupStore = localFileBackupStore
         self.securityScopedBookmarkAccess = securityScopedBookmarkAccess
         self.restoreProgress = restoreProgress
@@ -180,7 +182,14 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
 
             return imports.compactMap { importRecord in
                 let attachment = attachmentsByID[importRecord.attachmentRowId].owsFailUnwrap("FOREIGN KEYs mean this must exist.")
-                guard let metadata = localFileBackupStore.metadataRecord(attachmentId: importRecord.attachmentRowId, failIfNotExists: true, tx: tx) else {
+                guard
+                    let metadata = localFileBackupAttachmentMetadataStore.metadataRecord(
+                        attachmentId: importRecord.attachmentRowId,
+                        tx: tx,
+                    )
+                else {
+                    // TODO: Store error to present to beta user
+                    owsFailBeta("Missing local file attachment metadata!")
                     return nil
                 }
                 return (AttachmentWithMetadata(attachment: attachment, metadata: metadata), importRecord)
@@ -333,19 +342,24 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
         while true {
             try Task.checkCancellation()
             let (attachmentsWithMetadata, localFileExports) = db.read { tx in
-                failIfThrows {
-                    let localFileExports = localFileBackupStore.exportRecords(batchSize: Self.attachmentBatchSize, tx: tx)
-                    let ids = localFileExports.map({ $0.attachmentRowId })
-                    let attachments = attachmentStore.fetch(ids: ids, tx: tx)
-                    let attachmentsWithMetadata: [AttachmentWithMetadata] = attachments.compactMap {
-                        guard let metadata = localFileBackupStore.metadataRecord(attachmentId: $0.id, failIfNotExists: true, tx: tx) else {
-                            return nil
-                        }
-                        return AttachmentWithMetadata(attachment: $0, metadata: metadata)
+                let localFileExports = localFileBackupStore.exportRecords(batchSize: Self.attachmentBatchSize, tx: tx)
+                let ids = localFileExports.map({ $0.attachmentRowId })
+                let attachments = attachmentStore.fetch(ids: ids, tx: tx)
+                let attachmentsWithMetadata: [AttachmentWithMetadata] = attachments.compactMap {
+                    guard
+                        let metadata = localFileBackupAttachmentMetadataStore.metadataRecord(
+                            attachmentId: $0.id,
+                            tx: tx,
+                        )
+                    else {
+                        // TODO: Store error to present to beta user
+                        owsFailBeta("Missing local file attachment metadata!")
+                        return nil
                     }
-
-                    return (attachmentsWithMetadata, localFileExports)
+                    return AttachmentWithMetadata(attachment: $0, metadata: metadata)
                 }
+
+                return (attachmentsWithMetadata, localFileExports)
             }
             if localFileExports.isEmpty { break }
 
@@ -521,70 +535,6 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
         var backupIdBytes = encryptedBackupId.encryptedID
         try Aes256Ctr32.process(&backupIdBytes, key: localBackupMetadataKey, nonce: nonce)
         return backupIdBytes
-    }
-
-    func ensureAttachmentMetadataExists(progressSink: OWSProgressSink?) async {
-        struct TxContextAttachmentMetadata {
-            var cursor: FailIfThrowsRecordCursor<Attachment.Record>
-            var lastEnumeratedAttachmentId: Attachment.IDType?
-            var didFinish: Bool
-        }
-        let totalRemainingAttachmentCount = db.read { tx in
-            localFileBackupStore.attachmentCountSinceLastFetched(tx: tx)
-        }
-        let source = progressSink?.addSource(withLabel: ProgressLabel.ensureAttachmentMetadataExists, unitCount: UInt64(totalRemainingAttachmentCount))
-
-        await TimeGatedBatch.processAll(
-            db: db,
-            buildTxContext: { tx -> TxContextAttachmentMetadata in
-                let lastEnumeratedAttachmentId: Attachment.IDType? = localFileBackupStore.fetchLastEnumeratedAttachmentRowId(tx: tx)
-
-                return TxContextAttachmentMetadata(
-                    cursor: FailIfThrowsRecordCursor {
-                        return try attachmentStore.attachmentRecordsWithPlaintextHash(
-                            lastEnumeratedAttachmentId: lastEnumeratedAttachmentId,
-                            tx: tx,
-                        )
-                    },
-                    lastEnumeratedAttachmentId: lastEnumeratedAttachmentId,
-                    didFinish: false,
-                )
-            },
-            processBatch: { tx, txContext -> TimeGatedBatch.ProcessBatchResult<Void> in
-                guard let nextAttachmentRecord = txContext.cursor.next() else {
-                    txContext.didFinish = true
-                    return .done(())
-                }
-
-                source?.incrementCompletedUnitCount(by: 1)
-
-                let attachmentRecordId = nextAttachmentRecord.sqliteId!
-                txContext.lastEnumeratedAttachmentId = attachmentRecordId
-
-                guard let unencryptedByteCount = nextAttachmentRecord.unencryptedByteCount else {
-                    return .more
-                }
-
-                localFileBackupStore.insertNewMetadataIfNeeded(
-                    attachmentId: attachmentRecordId,
-                    unencryptedByteCount: unencryptedByteCount,
-                    // Create a new local key if it doesn't exist.
-                    localKey: nil,
-                    tx: tx,
-                )
-
-                return .more
-
-            },
-            concludeTx: { tx, txContext in
-                if txContext.didFinish {
-                    localFileBackupStore.clearLastEnumeratedAttachmentRowId(tx: tx)
-                    source?.complete()
-                } else if let lastEnumeratedAttachmentId = txContext.lastEnumeratedAttachmentId {
-                    localFileBackupStore.updateLastEnumeratedAttachmentRowId(lastEnumeratedAttachmentId, tx: tx)
-                }
-            },
-        )
     }
 
     /// - Parameter localBackupURL

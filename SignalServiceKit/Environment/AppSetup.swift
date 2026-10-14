@@ -651,6 +651,7 @@ extension AppSetup.GlobalsContinuation {
             tsAccountManager: tsAccountManager,
         )
 
+        let localFileBackupAttachmentMetadataStore = LocalFileBackupAttachmentMetadataStore()
         let localFileBackupStore = LocalFileBackupStore()
 
         let backupListMediaStore = BackupListMediaStore()
@@ -670,6 +671,7 @@ extension AppSetup.GlobalsContinuation {
             backupSettingsStore: backupSettingsStore,
             dateProvider: dateProvider,
             db: db,
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
             notificationPresenter: notificationPresenter,
             orphanedBackupAttachmentStore: orphanedBackupAttachmentStore,
             remoteConfigManager: remoteConfigManager,
@@ -713,6 +715,7 @@ extension AppSetup.GlobalsContinuation {
             attachmentStore: attachmentStore,
             backupAttachmentUploadScheduler: backupAttachmentUploadScheduler,
             dateProvider: dateProvider,
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
             orphanedAttachmentCleaner: orphanedAttachmentCleaner,
             orphanedAttachmentStore: orphanedAttachmentStore,
             orphanedBackupAttachmentScheduler: orphanedBackupAttachmentScheduler,
@@ -1482,8 +1485,8 @@ extension AppSetup.GlobalsContinuation {
             attachmentStore: attachmentStore,
             backupAttachmentDownloadScheduler: backupAttachmentDownloadScheduler,
             chatColorSettingStore: chatColorSettingStore,
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
             wallpaperStore: wallpaperStore,
-            localFileBackupStore: localFileBackupStore,
         )
 
         let backupInteractionStore = BackupArchiveInteractionStore(interactionStore: interactionStore)
@@ -1532,6 +1535,7 @@ extension AppSetup.GlobalsContinuation {
             attachmentManager: attachmentManager,
             attachmentStore: attachmentStore,
             backupAttachmentDownloadScheduler: backupAttachmentDownloadScheduler,
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
             localFileBackupStore: localFileBackupStore,
         )
         let backupsOversizeTextArchiver = BackupArchiveInlinedOversizeTextArchiver(
@@ -1559,6 +1563,7 @@ extension AppSetup.GlobalsContinuation {
             attachmentStore: attachmentStore,
             attachmentValidator: attachmentContentValidator,
             orphanedAttachmentCleaner: orphanedAttachmentCleaner,
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
             localFileBackupStore: localFileBackupStore,
             securityScopedBookmarkAccess: SecurityScopedBookmarkAccessImpl(),
             restoreProgress: localFileBackupAttachmentRestoreProgress,
@@ -1798,6 +1803,12 @@ extension AppSetup.GlobalsContinuation {
 
         let remoteReleaseNotesService = RemoteReleaseNotesService(signalService: signalService)
 
+        let localFileBackupAttachmentMetadataManager = LocalFileBackupAttachmentMetadataManager(
+            attachmentStore: attachmentStore,
+            db: db,
+            metadataStore: localFileBackupAttachmentMetadataStore,
+        )
+
         let localFileBackupExportJobStore = LocalFileBackupExportJobStore()
 
         let localFileBackupExportJobRunner = LocalFileBackupExportJobRunnerImpl(
@@ -1806,6 +1817,7 @@ extension AppSetup.GlobalsContinuation {
                 backupArchiveManager: backupArchiveManager,
                 db: db,
                 tsAccountManager: tsAccountManager,
+                localFileBackupAttachmentMetadataManager: localFileBackupAttachmentMetadataManager,
                 localFileBackupManager: localFileBackupManager,
                 securityScopedBookmarkAccess: SecurityScopedBookmarkAccessImpl(),
                 localFileBackupExportJobStore: localFileBackupExportJobStore,
