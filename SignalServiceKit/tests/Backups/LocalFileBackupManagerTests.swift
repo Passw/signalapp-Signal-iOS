@@ -196,17 +196,23 @@ struct LocalFileBackupManagerTests {
                 .fetchOne(tx.database)!.localKey
         }
 
-        let mediaName1 = await localFileBackupManager.mediaNameForAttachment(
+        let mediaName1 = LocalFileBackupAttachmentNaming.mediaName(
             localKey: localKey1,
             plaintextHash: mockAttachment1.plaintextHash!,
         )
-        let mediaName2 = await localFileBackupManager.mediaNameForAttachment(
+        let mediaName2 = LocalFileBackupAttachmentNaming.mediaName(
             localKey: localKey2,
             plaintextHash: mockAttachment2.plaintextHash!,
         )
 
-        let mediaNameDir1 = filesDir.appendingPathComponent(String(mediaName1.prefix(2)))
-        let mediaNameDir2 = filesDir.appendingPathComponent(String(mediaName2.prefix(2)))
+        let mediaNameDir1 = filesDir.appendingPathComponent(
+
+            LocalFileBackupAttachmentNaming.subdirectoryName(mediaName: mediaName1),
+
+        )
+        let mediaNameDir2 = filesDir.appendingPathComponent(
+            LocalFileBackupAttachmentNaming.subdirectoryName(mediaName: mediaName2),
+        )
 
         #expect(FileManager.default.fileExists(atPath: mediaNameDir1.path))
         #expect(FileManager.default.fileExists(atPath: mediaNameDir2.path))
@@ -303,11 +309,13 @@ struct LocalFileBackupManagerTests {
         try plaintextData.write(to: plaintextURL)
         defer { try? FileManager.default.removeItem(at: plaintextURL) }
 
-        let mediaName = localFileBackupManager.mediaNameForAttachment(
+        let mediaName = LocalFileBackupAttachmentNaming.mediaName(
             localKey: localKey.combinedKey,
             plaintextHash: plaintextHash,
         )
-        let subdir = filesDir.appendingPathComponent(String(mediaName.prefix(2)))
+        let subdir = filesDir.appendingPathComponent(
+            LocalFileBackupAttachmentNaming.subdirectoryName(mediaName: mediaName),
+        )
         try FileManager.default.createDirectory(at: subdir, withIntermediateDirectories: true)
 
         let _ = try Cryptography.encryptAttachment(
@@ -485,11 +493,11 @@ struct LocalFileBackupManagerTests {
                 .map { $0.localKey }
         }
 
-        let mediaName1 = await localFileBackupManager.mediaNameForAttachment(
+        let mediaName1 = LocalFileBackupAttachmentNaming.mediaName(
             localKey: localKey1!,
             plaintextHash: mockAttachment1.plaintextHash!,
         )
-        let mediaName2 = await localFileBackupManager.mediaNameForAttachment(
+        let mediaName2 = LocalFileBackupAttachmentNaming.mediaName(
             localKey: localKey2!,
             plaintextHash: mockAttachment2.plaintextHash!,
         )

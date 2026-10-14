@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 
-import CryptoKit
 public import LibSignalClient
 
 public enum LocalFileBackupError: Error {
@@ -214,9 +213,13 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
                     owsFailBeta("Missing plaintext hash for a local file attachment")
                     continue
                 }
-                // The files dir is divided into subdirectories based on the first 2 characters of the media name
-                let mediaName = mediaNameForAttachment(localKey: attachmentWithMetadata.metadata.localKey, plaintextHash: plaintextHash)
-                let attachmentSubDirectory = attachmentsDir.appendingPathComponent(String(mediaName.prefix(2)))
+                let mediaName = LocalFileBackupAttachmentNaming.mediaName(
+                    localKey: attachmentWithMetadata.metadata.localKey,
+                    plaintextHash: plaintextHash,
+                )
+                let attachmentSubDirectory = attachmentsDir.appendingPathComponent(
+                    LocalFileBackupAttachmentNaming.subdirectoryName(mediaName: mediaName),
+                )
 
                 let destination = attachmentSubDirectory.appendingPathComponent(mediaName)
 
@@ -385,7 +388,7 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
                 }
 
                 let localKey = attachmentWithMetadata.metadata.localKey
-                let localFileBackupMediaName = mediaNameForAttachment(
+                let localFileBackupMediaName = LocalFileBackupAttachmentNaming.mediaName(
                     localKey: localKey,
                     plaintextHash: attachmentStream.plaintextHash,
                 )
@@ -409,10 +412,11 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
 
                 let attachmentKey = try AttachmentKey(combinedKey: localKey)
 
-                // The files dir is divided into subdirectories based on the first 2 characters of the media name
                 let attachmentSubDirectory = backupsRootDirectory
                     .appendingPathComponent(FileStructure.attachmentDirectory.rawValue)
-                    .appendingPathComponent(String(localFileBackupMediaName.prefix(2)))
+                    .appendingPathComponent(LocalFileBackupAttachmentNaming.subdirectoryName(
+                        mediaName: localFileBackupMediaName,
+                    ))
 
                 try fileCoordinator.coordinateThrows(
                     writingItemAt: attachmentSubDirectory,
@@ -450,14 +454,6 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
             }
         }
         source?.complete()
-    }
-
-    func mediaNameForAttachment(localKey: Data, plaintextHash: Data) -> String {
-        let value = plaintextHash + localKey
-        var sha = SHA256()
-        sha.update(data: value)
-        let hash = Data(sha.finalize())
-        return hash.hexadecimalString
     }
 
     func queueLocalBackupAttachmentsForExport(localFileBackupAttachmentCollector: LocalFileBackupAttachmentCollector) async throws(CancellationError) {
