@@ -98,7 +98,7 @@ extension BackupArchive {
         /// per-frame data accumulated for the frame.
         func writeFrame(
             toStream stream: BackupArchiveOutputStream,
-            flush: BackupArchiveFlushBehavior,
+            flush: BackupArchiveFlushBehavior?,
             frameBencher: Bencher.FrameBencher,
             frameBuilder: () -> BackupProto_Frame,
         ) -> ArchiveFrameError? {

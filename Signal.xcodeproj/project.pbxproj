@@ -3111,6 +3111,7 @@
 		D979DA112B8D1B06000EEAB8 /* BadgeManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50EF8DC42A1860EF00A00935 /* BadgeManager.swift */; };
 		D979DA132B8D1B65000EEAB8 /* BadgeManagerTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50EF8DCD2A1BEBAE00A00935 /* BadgeManagerTest.swift */; };
 		D979DA162B8D1FDD000EEAB8 /* BadgeCountFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = D979DA152B8D1FDD000EEAB8 /* BadgeCountFetcher.swift */; };
+		D97B0634306B1F6300190DFC /* BackupArchiveJsonLinesOutputStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = D97B0633306B1F6300190DFC /* BackupArchiveJsonLinesOutputStream.swift */; };
 		D97C30C73014009500192617 /* ClockSkewManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D97C30C23013E29600192617 /* ClockSkewManager.swift */; };
 		D97C43962D7F74F300BA41E0 /* recipient_contacts_05.txtproto in Resources */ = {isa = PBXBuildFile; fileRef = D97C43952D7F74F300BA41E0 /* recipient_contacts_05.txtproto */; };
 		D97C43972D7F74F300BA41E0 /* recipient_contacts_05.binproto in Resources */ = {isa = PBXBuildFile; fileRef = D97C43942D7F74F300BA41E0 /* recipient_contacts_05.binproto */; };
@@ -7582,6 +7583,7 @@
 		D979CC5A2AD61699006AAC49 /* GroupCallRecordManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GroupCallRecordManager.swift; sourceTree = "<group>"; };
 		D979CC5C2AD616A4006AAC49 /* GroupCallRecordManagerTest.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GroupCallRecordManagerTest.swift; sourceTree = "<group>"; };
 		D979DA152B8D1FDD000EEAB8 /* BadgeCountFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BadgeCountFetcher.swift; sourceTree = "<group>"; };
+		D97B0633306B1F6300190DFC /* BackupArchiveJsonLinesOutputStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupArchiveJsonLinesOutputStream.swift; sourceTree = "<group>"; };
 		D97C30C23013E29600192617 /* ClockSkewManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClockSkewManager.swift; sourceTree = "<group>"; };
 		D97C43942D7F74F300BA41E0 /* recipient_contacts_05.binproto */ = {isa = PBXFileReference; lastKnownFileType = file; path = recipient_contacts_05.binproto; sourceTree = "<group>"; };
 		D97C43952D7F74F300BA41E0 /* recipient_contacts_05.txtproto */ = {isa = PBXFileReference; lastKnownFileType = text; path = recipient_contacts_05.txtproto; sourceTree = "<group>"; };
@@ -11332,6 +11334,7 @@
 		66CD25732B08079C00139E17 /* FileStreams */ = {
 			isa = PBXGroup;
 			children = (
+				D97B0633306B1F6300190DFC /* BackupArchiveJsonLinesOutputStream.swift */,
 				D90137DF305A68740008826F /* BackupArchiveOutputStream.swift */,
 				66CD25742B0807BC00139E17 /* BackupArchiveProtoInputStream.swift */,
 				66CD25762B0807C700139E17 /* BackupArchiveProtoOutputStream.swift */,
@@ -19876,6 +19879,7 @@
 				662590CD2B5994DC001FDCDD /* BackupArchiveGroupUpdateSwiftToProtoConverter.swift in Sources */,
 				D9C0AE6F2BDC6B3800FCB05E /* BackupArchiveIndividualCallArchiver.swift in Sources */,
 				66232AD72CB993F500AE6A76 /* BackupArchiveInteractionStore.swift in Sources */,
+				D97B0634306B1F6300190DFC /* BackupArchiveJsonLinesOutputStream.swift in Sources */,
 				D99655E32C50433800AD29FB /* BackupArchiveLearnedProfileChatUpdateArchiver.swift in Sources */,
 				66CD25792B0832A400139E17 /* BackupArchiveLocalRecipientArchiver.swift in Sources */,
 				665C0D5C2ADF538100539A37 /* BackupArchiveManager.swift in Sources */,

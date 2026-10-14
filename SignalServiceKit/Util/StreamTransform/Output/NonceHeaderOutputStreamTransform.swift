@@ -19,12 +19,6 @@ public class NonceHeaderOutputStreamTransform: StreamTransform {
         if hasWrittenHeader { return data }
         defer { hasWrittenHeader = true }
 
-        var result = Data()
-        result.append(BackupNonce.magicFileSignature)
-        let headerData = metadataHeader.data
-        result.append(ChunkedOutputStreamTransform.writeVariableLengthUInt32(UInt32(headerData.count)))
-        result.append(headerData)
-        result.append(data)
-        return result
+        return BackupNonce.magicFileSignature + metadataHeader.data.prefixedWithVarintLength() + data
     }
 }

@@ -162,7 +162,7 @@ private class MockOutputStream: BackupArchiveOutputStream {
 
     func writeHeader(_ header: BackupProto_BackupInfo) throws {}
 
-    func writeFrame(_ frame: BackupProto_Frame, flush: BackupArchiveFlushBehavior) throws {
+    func writeFrame(_ frame: BackupProto_Frame, flush: BackupArchiveFlushBehavior?) throws {
         if shouldFail {
             throw OWSGenericError("Failing for tests!")
         }

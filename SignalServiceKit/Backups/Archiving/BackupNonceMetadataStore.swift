@@ -109,9 +109,7 @@ extension BackupNonce.MetadataHeader {
     /// Produce the full serialized prefix we should add to the backup file, including the file signature,
     /// varint header length, and header itself.
     func serializedBackupFilePrefix() -> Data {
-        let headerData = self.data
-        let varint = ChunkedOutputStreamTransform.writeVariableLengthUInt32(UInt32(headerData.count))
-        return BackupNonce.magicFileSignature + varint + headerData
+        return BackupNonce.magicFileSignature + self.data.prefixedWithVarintLength()
     }
 }
 

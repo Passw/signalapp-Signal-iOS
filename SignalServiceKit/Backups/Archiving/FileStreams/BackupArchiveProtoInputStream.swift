@@ -13,14 +13,8 @@ extension BackupArchive {
 
 // MARK: -
 
-/**
- * Input stream for reading and writing a backup file on disk.
- *
- * The backup file is just a sequence of serialized proto bytes, back to back, delimited by varint
- * byte sizes so we know how much to read into memory to deserialize the next proto.
- * The input stream abstracts over this, and allows callers to just think in terms of "frames",
- * the individual proto objects that we read one at a time.
- */
+/// Input stream for reading a "varint-proto" Backup file, where headers and
+/// frames are represented as concatenated, varint-prefixed serialized protos.
 class BackupArchiveProtoInputStream {
     private let inputStream: TransformingInputStream
 

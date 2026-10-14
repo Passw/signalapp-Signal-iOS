@@ -7,15 +7,9 @@ import LibSignalClient
 
 // MARK: -
 
-/// Creates streams for reading and writing to a plaintext Backup file on-disk.
+/// Creates streams for varint-prefixed, serialized-proto, plaintext Backup files.
 ///
-/// A Backup file is a sequence of concatenated serialized proto bytes delimited
-/// by varint byte sizes, which tell us how much to read into memory to
-/// deserialize the next proto. The streams provided by this type abstract over
-/// this serialized format, allowing callers instead to think in terms of
-/// "frames", or individual proto objects that we read or write individually.
-///
-/// - SeeAlso: ``BackupArchiveEncryptedProtoStreamProvider``
+/// - SeeAlso `BackupArchiveEncryptedProtoStreamProvider`
 class BackupArchivePlaintextProtoStreamProvider {
     private let genericProtoStreamProvider: GenericProtoStreamProvider
 
@@ -59,15 +53,11 @@ class BackupArchivePlaintextProtoStreamProvider {
     }
 }
 
-/// Creates streams for reading and writing to an encrypted Backup file on-disk.
+// MARK: -
+
+/// Creates streams for varint-prefixed, serialized-proto, encrypted Backup files.
 ///
-/// A Backup file is a sequence of concatenated serialized proto bytes delimited
-/// by varint byte sizes, which tell us how much to read into memory to
-/// deserialize the next proto. The streams provided by this type abstract over
-/// this serialized format, allowing callers instead to think in terms of
-/// "frames", or individual proto objects that we read or write individually.
-///
-/// - SeeAlso: ``BackupArchivePlaintextProtoStreamProvider``
+/// - SeeAlso `BackupArchivePlaintextProtoStreamProvider`
 class BackupArchiveEncryptedProtoStreamProvider {
     private let genericProtoStreamProvider: GenericProtoStreamProvider
     private let logger = PrefixedLogger(prefix: "[Backups]")

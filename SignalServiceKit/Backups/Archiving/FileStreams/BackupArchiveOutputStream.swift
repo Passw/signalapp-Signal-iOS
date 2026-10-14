@@ -6,7 +6,6 @@
 /// When the underlying stream should flush buffered (e.g. compressed) data
 /// after writing a frame.
 enum BackupArchiveFlushBehavior {
-    case none
     case afterWrite
     case afterInterval
 }
@@ -25,7 +24,7 @@ protocol BackupArchiveOutputStream {
     func writeHeader(_ header: BackupProto_BackupInfo) throws
 
     /// Write a frame to the stream.
-    func writeFrame(_ frame: BackupProto_Frame, flush: BackupArchiveFlushBehavior) throws
+    func writeFrame(_ frame: BackupProto_Frame, flush: BackupArchiveFlushBehavior?) throws
 
     /// Close the stream.
     func closeFileStream() throws
