@@ -5,8 +5,7 @@
 
 public import SignalServiceKit
 
-// A modal view that be used during blocking interactions (e.g. waiting on response from
-// service or on the completion of a long-running local operation).
+/// A modal, indeterminate activity indicator for async work.
 public class ModalActivityIndicatorViewController: OWSViewController {
     public enum Constants {
         public static let defaultPresentationDelay: TimeInterval = 0.05

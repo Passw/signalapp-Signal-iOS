@@ -65,6 +65,28 @@ class BackupArchiveManagerMock: BackupArchiveManager {
         )
     }
 
+    /// Attachments added to the collector passed to
+    /// `exportPlaintextBackupForTakeout`, if any.
+    var exportPlaintextBackupForTakeoutAttachmentIds: [Attachment.IDType] = []
+
+    func exportPlaintextBackupForTakeout(
+        localIdentifiers: LocalIdentifiers,
+        attachmentCollector: LocalFileBackupAttachmentCollector?,
+        progress: OWSProgressSink?,
+    ) async throws -> URL {
+        for attachmentId in exportPlaintextBackupForTakeoutAttachmentIds {
+            attachmentCollector?.append(id: attachmentId)
+        }
+
+        let fileUrl = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent(UUID().uuidString)
+        try Data().write(to: fileUrl)
+
+        let source = progress?.addSource(withLabel: "", unitCount: 1)
+        source?.incrementCompletedUnitCount(by: 1)
+        return fileUrl
+    }
+
     func exportPlaintextBackupForTests(
         localIdentifiers: LocalIdentifiers,
     ) async throws -> URL {

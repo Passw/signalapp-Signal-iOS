@@ -1674,6 +1674,7 @@ extension AppSetup.GlobalsContinuation {
                 storyStore: backupStoryStore,
                 threadStore: backupThreadStore,
             ),
+            jsonLinesStreamProvider: BackupArchiveJsonLinesStreamProvider(),
             libsignalNet: libsignalNet,
             localStorage: accountKeyStore,
             localRecipientArchiver: BackupArchiveLocalRecipientArchiver(
@@ -1827,6 +1828,17 @@ extension AppSetup.GlobalsContinuation {
             db: db,
             backupExportLock: backupExportLock,
         )
+        let plaintextTakeoutManager = PlaintextTakeoutManager(
+            attachmentStore: attachmentStore,
+            backupArchiveManager: backupArchiveManager,
+            dateProvider: dateProvider,
+            db: db,
+            localFileBackupAttachmentMetadataManager: localFileBackupAttachmentMetadataManager,
+            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
+            securityScopedBookmarkAccess: SecurityScopedBookmarkAccessImpl(),
+            tsAccountManager: tsAccountManager,
+        )
+
         let dependenciesBridge = DependenciesBridge(
             accountAttributesUpdater: accountAttributesUpdater,
             accountEntropyPoolManager: accountEntropyPoolManager,
@@ -1939,6 +1951,7 @@ extension AppSetup.GlobalsContinuation {
             pinnedMessageExpirationJob: pinnedMessageExpirationJob,
             pinnedThreadManager: pinnedThreadManager,
             pinnedThreadStore: pinnedThreadStore,
+            plaintextTakeoutManager: plaintextTakeoutManager,
             pollMessageManager: pollMessageManager,
             preKeyManager: preKeyManager,
             privateStoryThreadDeletionManager: privateStoryThreadDeletionManager,

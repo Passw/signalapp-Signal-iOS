@@ -7,7 +7,7 @@ import IntentsUI
 import SignalServiceKit
 import SignalUI
 
-class ChatsSettingsViewController: OWSTableViewController2 {
+class ChatsSettingsViewController: OWSTableViewController2, UIDocumentPickerDelegate {
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -102,6 +102,17 @@ class ChatsSettingsViewController: OWSTableViewController2 {
         )
         contents.add(keepMutedChatsArchived)
 
+        if BuildFlags.Backups.takeoutExport {
+            let exportChatsSection = OWSTableSection()
+            exportChatsSection.add(.item(
+                name: "Export Chats",
+                actionBlock: { [weak self] in
+                    self?.didTapExportChats()
+                },
+            ))
+            contents.add(exportChatsSection)
+        }
+
         let clearHistorySection = OWSTableSection()
         clearHistorySection.add(.item(
             name: OWSLocalizedString("SETTINGS_CLEAR_HISTORY", comment: ""),
@@ -166,6 +177,63 @@ class ChatsSettingsViewController: OWSTableViewController2 {
         SSKEnvironment.shared.databaseStorageRef.write { SSKPreferences.setShouldKeepMutedChatsArchived(sender.isOn, transaction: $0) }
 
         SSKEnvironment.shared.storageServiceManagerRef.recordPendingLocalAccountUpdates()
+    }
+
+    // MARK: - Export Chats
+
+    private func didTapExportChats() {
+        let pickerController = UIDocumentPickerViewController(
+            forOpeningContentTypes: [.folder],
+            asCopy: false,
+        )
+        pickerController.delegate = self
+        present(pickerController, animated: true)
+    }
+
+    private func exportChatsWithProgress(folderUrl: URL) {
+        let plaintextTakeoutManager = DependenciesBridge.shared.plaintextTakeoutManager
+
+        let (progressUpdates, progressContinuation) = AsyncStream<Float>.makeStream()
+        let progressSink = OWSSequentialProgress<PlaintextTakeoutProgressPhase>.createSink { progress in
+            progressContinuation.yield(progress.percentComplete)
+        }
+
+        Task {
+            do {
+                try await ModalCircularProgressViewController.presentAndRun(
+                    from: self,
+                    title: "Exporting chats…",
+                    progressUpdates: progressUpdates,
+                ) {
+                    _ = try await plaintextTakeoutManager.exportTakeout(
+                        destinationFolderUrl: folderUrl,
+                        includeAttachments: true,
+                        progress: progressSink,
+                    )
+                }
+            } catch is CancellationError {
+                // Nothing
+            } catch {
+                OWSActionSheets.showContactSupportActionSheet(
+                    message: CommonStrings.somethingWentWrongTryAgainLaterError,
+                    emailFilter: .custom("iOS Plaintext Takeout Failed"),
+                    fromViewController: self,
+                )
+            }
+        }
+    }
+
+    // MARK: - UIDocumentPickerDelegate
+
+    func documentPicker(
+        _ controller: UIDocumentPickerViewController,
+        didPickDocumentsAt urls: [URL],
+    ) {
+        guard let folderUrl = urls.first else {
+            return
+        }
+
+        exportChatsWithProgress(folderUrl: folderUrl)
     }
 
     // MARK: -

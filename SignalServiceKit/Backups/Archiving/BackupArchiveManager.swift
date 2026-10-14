@@ -62,6 +62,21 @@ public protocol BackupArchiveManager {
         logger: PrefixedLogger,
     ) async throws -> Upload.EncryptedBackupUploadMetadata
 
+    /// Export a plaintext Backup file for a user-initiated takeout, at the
+    /// returned file URL.
+    ///
+    /// - Important
+    /// The resulting Backup file is in JSONL format.
+    ///
+    /// - Parameter attachmentCollector
+    /// Collects attachments referenced by the Backup file. If `nil`,
+    /// attachments are not collected.
+    func exportPlaintextBackupForTakeout(
+        localIdentifiers: LocalIdentifiers,
+        attachmentCollector: LocalFileBackupAttachmentCollector?,
+        progress: OWSProgressSink?,
+    ) async throws -> URL
+
 #if TESTABLE_BUILD
     /// Export a plaintext backup binary at the returned file URL, for use in
     /// integration tests.

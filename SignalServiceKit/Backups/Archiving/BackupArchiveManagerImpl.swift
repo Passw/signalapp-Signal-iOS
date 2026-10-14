@@ -52,6 +52,7 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
     private let encryptedProtoStreamProvider: BackupArchiveEncryptedProtoStreamProvider
     private let fullTextSearchIndexer: BackupArchiveFullTextSearchIndexer
     private let groupRecipientArchiver: BackupArchiveGroupRecipientArchiver
+    private let jsonLinesStreamProvider: BackupArchiveJsonLinesStreamProvider
     private let kvStore: KeyValueStore
     private let libsignalNet: LibSignalClient.Net
     private let localStorage: AccountKeyStore
@@ -94,6 +95,7 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
         encryptedProtoStreamProvider: BackupArchiveEncryptedProtoStreamProvider,
         fullTextSearchIndexer: BackupArchiveFullTextSearchIndexer,
         groupRecipientArchiver: BackupArchiveGroupRecipientArchiver,
+        jsonLinesStreamProvider: BackupArchiveJsonLinesStreamProvider,
         libsignalNet: LibSignalClient.Net,
         localStorage: AccountKeyStore,
         localRecipientArchiver: BackupArchiveLocalRecipientArchiver,
@@ -132,6 +134,7 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
         self.encryptedProtoStreamProvider = encryptedProtoStreamProvider
         self.fullTextSearchIndexer = fullTextSearchIndexer
         self.groupRecipientArchiver = groupRecipientArchiver
+        self.jsonLinesStreamProvider = jsonLinesStreamProvider
         self.kvStore = KeyValueStore(collection: Constants.keyValueStoreCollectionName)
         self.libsignalNet = libsignalNet
         self.localStorage = localStorage
@@ -265,14 +268,15 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
         let attachmentByteCounter = BackupArchiveAttachmentByteCounter()
         let startDate = dateProvider()
 
-        // Filter included content according to the purpose of this backup.
-        let includedContentFilter = BackupArchive.IncludedContentFilter(
-            backupPurpose: backupPurpose.libsignalPurpose,
-        )
-
-        var localFileBackupAttachmentCollector: LocalFileBackupAttachmentCollector?
+        let localFileBackupAttachmentCollector: LocalFileBackupAttachmentCollector?
+        let includedContentFilter: BackupArchive.IncludedContentFilter
+        let purposeForLogging: String
         switch backupPurpose {
         case .remoteExport(let key, let chatAuth):
+            localFileBackupAttachmentCollector = nil
+            includedContentFilter = .remoteBackup
+            purposeForLogging = "RemoteBackup"
+
             // If an SVRB restore has been scheduled, do this restore before continuing
             // with the remote backup.  This ensures the local and remote state are
             // consistent and avoids the possibility of a backup being created that
@@ -297,9 +301,13 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
                 }
             }
         case .linkNsync:
-            break
+            localFileBackupAttachmentCollector = nil
+            includedContentFilter = .linkAndSync
+            purposeForLogging = "LinkAndSync"
         case .localExport(_, let attachmentCollector):
             localFileBackupAttachmentCollector = attachmentCollector
+            includedContentFilter = .remoteBackup
+            purposeForLogging = "LocalFileBackup"
         }
 
         let encryptionMetadata = try await backupPurpose.deriveEncryptionMetadataWithSVRBIfNeeded(
@@ -318,7 +326,7 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
 
         let metadata = try await _exportBackup(
             localIdentifiers: localIdentifiers,
-            backupPurpose: backupPurpose.libsignalPurpose,
+            purposeForLogging: purposeForLogging,
             startDate: startDate,
             includedContentFilter: includedContentFilter,
             progressSink: progressSink,
@@ -362,6 +370,39 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
         return metadata
     }
 
+    public func exportPlaintextBackupForTakeout(
+        localIdentifiers: LocalIdentifiers,
+        attachmentCollector: LocalFileBackupAttachmentCollector?,
+        progress progressSink: OWSProgressSink?,
+    ) async throws -> URL {
+        let attachmentByteCounter = BackupArchiveAttachmentByteCounter()
+        let startDate = dateProvider()
+
+        return try await _exportBackup(
+            localIdentifiers: localIdentifiers,
+            purposeForLogging: "PlaintextTakeout",
+            startDate: startDate,
+            includedContentFilter: .plaintextTakeout,
+            progressSink: progressSink,
+            attachmentByteCounter: attachmentByteCounter,
+            localFileBackupAttachmentCollector: attachmentCollector,
+            benchTitle: "Export plaintext Backup for takeout",
+            openOutputStreamBlock: { exportProgress, _ in
+                let (
+                    jsonLinesOutputStream,
+                    fileUrl,
+                ) = try jsonLinesStreamProvider.openOutputFileStream(
+                    exportProgress: exportProgress,
+                )
+
+                return (
+                    outputStream: jsonLinesOutputStream,
+                    streamMetadataProvider: { fileUrl },
+                )
+            },
+        )
+    }
+
 #if TESTABLE_BUILD
     public func exportPlaintextBackupForTests(
         localIdentifiers: LocalIdentifiers,
@@ -371,14 +412,16 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
 
         // For the integration tests, don't filter out any content. The premise
         // of the tests is to verify that round-tripping a Backup file is
-        // idempotent. The device transfer purpose includes everything.
+        // idempotent.
         let includedContentFilter = BackupArchive.IncludedContentFilter(
-            backupPurpose: .deviceTransfer,
+            minExpirationTimeMs: 0,
+            minRemainingTimeUntilExpirationMs: 0,
+            shouldTombstoneViewOnce: false,
         )
 
         return try await _exportBackup(
             localIdentifiers: localIdentifiers,
-            backupPurpose: .remoteBackup,
+            purposeForLogging: "Tests",
             startDate: startDate,
             includedContentFilter: includedContentFilter,
             progressSink: nil,
@@ -404,7 +447,7 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
 
     private func _exportBackup<OutputStreamMetadata>(
         localIdentifiers: LocalIdentifiers,
-        backupPurpose: MessageBackupPurpose,
+        purposeForLogging: String,
         startDate: Date,
         includedContentFilter: BackupArchive.IncludedContentFilter,
         progressSink: OWSProgressSink?,
@@ -467,7 +510,7 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
                 try self._exportBackup(
                     outputStream: outputStream,
                     localIdentifiers: localIdentifiers,
-                    backupPurpose: backupPurpose,
+                    purposeForLogging: purposeForLogging,
                     startDate: startDate,
                     attachmentByteCounter: attachmentByteCounter,
                     includedContentFilter: includedContentFilter,
@@ -488,7 +531,7 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
     private func _exportBackup(
         outputStream stream: BackupArchiveOutputStream,
         localIdentifiers: LocalIdentifiers,
-        backupPurpose: MessageBackupPurpose,
+        purposeForLogging: String,
         startDate: Date,
         attachmentByteCounter: BackupArchiveAttachmentByteCounter,
         includedContentFilter: BackupArchive.IncludedContentFilter,
@@ -509,10 +552,6 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
         let remoteConfig = remoteConfigManager.currentConfig()
         let currentUploadEra = backupAttachmentUploadEraStore.currentUploadEra(tx: tx)
         let backupVersion = Constants.supportedBackupVersion
-        let purposeString: String = switch backupPurpose {
-        case .deviceTransfer: "LinkNSync"
-        case .remoteBackup: "RemoteBackup"
-        }
 
         // We already have a passed-in MRBK, but that came from outside this read tx so
         // refetch it to make sure. If it changed to a new value, use the new value, thats fine
@@ -523,7 +562,7 @@ public class BackupArchiveManagerImpl: BackupArchiveManager {
 
         var errors = [any BackupArchive.LoggableError]()
         let result = Result<Void, Error>(catching: {
-            logger.info("Exporting for \(purposeString) with version \(backupVersion), timestamp \(startDate.ows_millisecondsSince1970)")
+            logger.info("Exporting for \(purposeForLogging) with version \(backupVersion), timestamp \(startDate.ows_millisecondsSince1970)")
 
             try autoreleasepool {
                 try writeHeader(

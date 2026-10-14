@@ -2127,6 +2127,8 @@
 		D904CDD3306C77C200EC6C4E /* LocalFileBackupAttachmentMetadataManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D904CDD2306C77C200EC6C4E /* LocalFileBackupAttachmentMetadataManagerTests.swift */; };
 		D904CDD5306D769C00EC6C4E /* LocalFileBackupAttachmentNaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = D904CDD4306D769700EC6C4E /* LocalFileBackupAttachmentNaming.swift */; };
 		D904CDDB306D97F900EC6C4E /* ModalCircularProgressViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D904CDDA306D97F900EC6C4E /* ModalCircularProgressViewController.swift */; };
+		D904CDD8306D81A100EC6C4E /* PlaintextTakeoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D904CDD7306D819E00EC6C4E /* PlaintextTakeoutManager.swift */; };
+		D904CDE0306DCA5400EC6C4E /* PlaintextTakeoutManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D904CDDF306DCA4F00EC6C4E /* PlaintextTakeoutManagerTests.swift */; };
 		D90AA3322CC9616B00021CB0 /* chat_item_standard_message_special_attachments_12.txtproto in Resources */ = {isa = PBXBuildFile; fileRef = D90AA2222CC9616A00021CB0 /* chat_item_standard_message_special_attachments_12.txtproto */; };
 		D90AA3332CC9616B00021CB0 /* account_data_03.binproto in Resources */ = {isa = PBXBuildFile; fileRef = D90AA0772CC9616A00021CB0 /* account_data_03.binproto */; };
 		D90AA3342CC9616B00021CB0 /* chat_item_sticker_message_08.binproto in Resources */ = {isa = PBXBuildFile; fileRef = D90AA2B52CC9616A00021CB0 /* chat_item_sticker_message_08.binproto */; };
@@ -6592,6 +6594,8 @@
 		D904CDD2306C77C200EC6C4E /* LocalFileBackupAttachmentMetadataManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalFileBackupAttachmentMetadataManagerTests.swift; sourceTree = "<group>"; };
 		D904CDD4306D769700EC6C4E /* LocalFileBackupAttachmentNaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalFileBackupAttachmentNaming.swift; sourceTree = "<group>"; };
 		D904CDDA306D97F900EC6C4E /* ModalCircularProgressViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCircularProgressViewController.swift; sourceTree = "<group>"; };
+		D904CDD7306D819E00EC6C4E /* PlaintextTakeoutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaintextTakeoutManager.swift; sourceTree = "<group>"; };
+		D904CDDF306DCA4F00EC6C4E /* PlaintextTakeoutManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaintextTakeoutManagerTests.swift; sourceTree = "<group>"; };
 		D90AA0712CC9616A00021CB0 /* account_data_00.binproto */ = {isa = PBXFileReference; lastKnownFileType = file; path = account_data_00.binproto; sourceTree = "<group>"; };
 		D90AA0722CC9616A00021CB0 /* account_data_00.txtproto */ = {isa = PBXFileReference; lastKnownFileType = text; path = account_data_00.txtproto; sourceTree = "<group>"; };
 		D90AA0732CC9616A00021CB0 /* account_data_01.binproto */ = {isa = PBXFileReference; lastKnownFileType = file; path = account_data_01.binproto; sourceTree = "<group>"; };
@@ -9162,6 +9166,7 @@
 			children = (
 				887B6DCA25F6C3F500E677D4 /* Account */,
 				887B6DCB25F6C40500E677D4 /* Appearance */,
+				D904CDD9306D97D900EC6C4E /* Chats */,
 				887B6DCC25F6C41500E677D4 /* Data Usage */,
 				F9C5BC5F282E98D4001EB3BF /* Donations */,
 				32ECD08624BFBF5C00EDDED0 /* Help */,
@@ -9173,7 +9178,6 @@
 				8871B16D25F007CE00D4E070 /* Profile */,
 				88F58A1625EEE5B9008CDA24 /* AppSettingsViewController.swift */,
 				F9BC0A2427FB8E730085B23D /* AppSettingsViewsUtil.swift */,
-				887B380725F0355700685845 /* ChatsSettingsViewController.swift */,
 				3414896825C9B6490098E3ED /* CurrencyPickerViewController.swift */,
 			);
 			path = AppSettings;
@@ -10416,6 +10420,7 @@
 				D904CDD2306C77C200EC6C4E /* LocalFileBackupAttachmentMetadataManagerTests.swift */,
 				04B285063022409400BCF018 /* LocalFileBackupExportJobRunnerTests.swift */,
 				047DBEE32FFD4918009F457F /* LocalFileBackupManagerTests.swift */,
+				D904CDDF306DCA4F00EC6C4E /* PlaintextTakeoutManagerTests.swift */,
 			);
 			path = Backups;
 			sourceTree = "<group>";
@@ -10850,6 +10855,7 @@
 				667BB2042C58073600E79B57 /* Attachments */,
 				66A1F4E02E035BE40095DE4B /* BackupExportJob */,
 				04538D352FEB14C200F8E084 /* LocalFileBackup */,
+				D904CDD6306D819700EC6C4E /* PlaintextTakeout */,
 				D9388C8F2DA4751A0048D4F9 /* Settings */,
 				D9C96F742E21AA4900CA885A /* BackupCDNCredentialStore.swift */,
 				D9C96F762E21ADBE00CA885A /* BackupCDNMetadata.swift */,
@@ -12689,6 +12695,22 @@
 				4C6F527B20FFE8400097DEEE /* SignalUBSan.supp */,
 			);
 			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		D904CDD6306D819700EC6C4E /* PlaintextTakeout */ = {
+			isa = PBXGroup;
+			children = (
+				D904CDD7306D819E00EC6C4E /* PlaintextTakeoutManager.swift */,
+			);
+			path = PlaintextTakeout;
+			sourceTree = "<group>";
+		};
+		D904CDD9306D97D900EC6C4E /* Chats */ = {
+			isa = PBXGroup;
+			children = (
+				887B380725F0355700685845 /* ChatsSettingsViewController.swift */,
+			);
+			path = Chats;
 			sourceTree = "<group>";
 		};
 		D90AA3252CC9616A00021CB0 /* test-cases */ = {
@@ -20572,6 +20594,7 @@
 				F9C5CDEF289453B400548EEE /* PinnedThreadManagerImpl.swift in Sources */,
 				50F3DF633017F5E9003A5F15 /* PinnedThreadRecord.swift in Sources */,
 				6694BF6A2B3650E400B18764 /* PinnedThreadStore.swift in Sources */,
+				D904CDD8306D81A100EC6C4E /* PlaintextTakeoutManager.swift in Sources */,
 				F9C5CE2A289453B400548EEE /* Platform.swift in Sources */,
 				F97823F328CD0AA1005533BF /* PngChunker.swift in Sources */,
 				D9CAF7502A0ACFF20049193A /* PniDistributionParameterBuilder.swift in Sources */,
@@ -21171,6 +21194,7 @@
 				F9426274289B1B5500460798 /* PhoneNumberTest.swift in Sources */,
 				F9426277289B1B5600460798 /* PhoneNumberUtilTest.swift in Sources */,
 				045B408E2EC6897B002D3F9A /* PinnedMessageManagerTest.swift in Sources */,
+				D904CDE0306DCA5400EC6C4E /* PlaintextTakeoutManagerTests.swift in Sources */,
 				F97823F428CD0AC7005533BF /* PngChunkerTest.swift in Sources */,
 				D9CAF7532A0ADA4B0049193A /* PniDistributionParameterBuilderTest.swift in Sources */,
 				50B62C762AB216E300705A89 /* PniSignatureProcessorTest.swift in Sources */,

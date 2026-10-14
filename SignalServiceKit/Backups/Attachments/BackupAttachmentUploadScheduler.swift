@@ -310,9 +310,7 @@ public class BackupAttachmentUploadScheduler {
             // attachment for it in a remote backup. If we wouldn't, that
             // reference shouldn't be used as the anchor for upload (and if
             // it is the only reference, we shouldn't upload at all!)
-            let includedContentFilter = BackupArchive.IncludedContentFilter(
-                backupPurpose: .remoteBackup,
-            )
+            let includedContentFilter = BackupArchive.IncludedContentFilter.remoteBackup
             if
                 includedContentFilter.shouldSkipAttachment(
                     owningMessage: message,

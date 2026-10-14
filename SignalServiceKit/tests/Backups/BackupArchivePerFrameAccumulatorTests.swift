@@ -126,7 +126,7 @@ struct BackupArchivePerFrameAccumulatorTests {
                 remoteConfig: RemoteConfig(clockSkew: 0, valueFlags: [:]),
                 currentUploadEra: "",
                 bencher: bencher,
-                includedContentFilter: BackupArchive.IncludedContentFilter(backupPurpose: .remoteBackup),
+                includedContentFilter: .remoteBackup,
                 perFrameAccumulator: perFrameAccumulator,
                 tx: tx,
             ))

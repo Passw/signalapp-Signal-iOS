@@ -430,7 +430,7 @@ public enum OWSFileCoordinatorError: Error {
 }
 
 extension NSFileCoordinator {
-    func coordinateThrows(
+    public func coordinateThrows(
         writingItemAt url: URL,
         options: WritingOptions = [],
         by block: (URL) throws -> Void,

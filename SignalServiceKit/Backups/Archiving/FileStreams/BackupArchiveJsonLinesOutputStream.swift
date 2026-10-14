@@ -9,7 +9,9 @@ import LibSignalClient
 class BackupArchiveJsonLinesStreamProvider {
     init() {}
 
-    func openOutputFileStream() throws -> (
+    func openOutputFileStream(
+        exportProgress: BackupArchiveExportProgress?,
+    ) throws -> (
         outputJsonLinesStream: BackupArchiveJsonLinesOutputStream,
         fileUrl: URL,
     ) {
@@ -30,6 +32,7 @@ class BackupArchiveJsonLinesStreamProvider {
 
         let outputJsonLinesStream = BackupArchiveJsonLinesOutputStream(
             outputStream: outputStream,
+            exportProgress: exportProgress,
         )
 
         return (
@@ -46,6 +49,7 @@ class BackupArchiveJsonLinesStreamProvider {
 /// underlying Backup protos.
 class BackupArchiveJsonLinesOutputStream: BackupArchiveOutputStream {
 
+    private let exportProgress: BackupArchiveExportProgress?
     private let logger = PrefixedLogger(prefix: "[Backups]")
     private let outputStream: any OutputStreamable
 
@@ -53,7 +57,9 @@ class BackupArchiveJsonLinesOutputStream: BackupArchiveOutputStream {
 
     init(
         outputStream: any OutputStreamable,
+        exportProgress: BackupArchiveExportProgress?,
     ) {
+        self.exportProgress = exportProgress
         self.libsignalJsonExporter = nil
         self.outputStream = outputStream
     }
@@ -78,6 +84,7 @@ class BackupArchiveJsonLinesOutputStream: BackupArchiveOutputStream {
         libsignalJsonExporter = jsonExporter
 
         try writeLine(jsonExporter.initialChunk)
+        exportProgress?.didExportFrame()
     }
 
     func writeFrame(_ frame: BackupProto_Frame, flush: BackupArchiveFlushBehavior?) throws {
@@ -109,10 +116,14 @@ class BackupArchiveJsonLinesOutputStream: BackupArchiveOutputStream {
             throw OWSGenericError("Failed to export frame! \(errorMessage)")
         }
 
-        // Will be missing even if no error for frames filtered out by LibSignal.
-        if let line = exportFrameResult.line {
-            try writeLine(line)
+        // LibSignal omits the line for frames it filters out. Our own filtering
+        // should be a superset of LibSignal's, so this is unexpected.
+        guard let line = exportFrameResult.line else {
+            throw OWSAssertionError("LibSignal unexpectedly filtered out frame!")
         }
+
+        try writeLine(line)
+        exportProgress?.didExportFrame()
     }
 
     func closeFileStream() throws {
@@ -120,6 +131,7 @@ class BackupArchiveJsonLinesOutputStream: BackupArchiveOutputStream {
             throw OWSAssertionError("Missing exporter! Did we not write the header?")
         }
 
+        exportProgress?.didCloseStream()
         try outputStream.close()
         try libsignalJsonExporter.finishExport()
     }
