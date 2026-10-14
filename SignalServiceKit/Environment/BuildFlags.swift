@@ -44,7 +44,7 @@ public enum BuildFlags {
         public static let mediaErrorDisplay = build <= .beta
         public static let useLowerDefaultListMediaRefreshInterval = build <= .beta
 
-        public static let takeoutExport = build <= .dev
+        public static let takeoutExport = true
     }
 
     static let netBuildVariant: Net.BuildVariant = build <= .beta ? .beta : .production
