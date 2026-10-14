@@ -17,6 +17,7 @@ struct LocalFileBackupManagerTests {
     private let db = InMemoryDB()
     private let attachmentStore = AttachmentStore()
     private let localFileBackupAttachmentMetadataManager: LocalFileBackupAttachmentMetadataManager
+    private let localFileBackupAttachmentMetadataStore = LocalFileBackupAttachmentMetadataStore()
     private let backupArchiveManager = BackupArchiveManagerMock()
 
     init() {
@@ -28,8 +29,6 @@ struct LocalFileBackupManagerTests {
             db: db,
             orphanedAttachmentCleaner: orphanedAttachmentCleaner,
         )
-        let localFileBackupAttachmentMetadataStore = LocalFileBackupAttachmentMetadataStore()
-
         self.localFileBackupAttachmentMetadataManager = LocalFileBackupAttachmentMetadataManager(
             attachmentStore: attachmentStore,
             db: db,
@@ -74,6 +73,8 @@ struct LocalFileBackupManagerTests {
             return (id1, id2)
         }
 
+        try await localFileBackupAttachmentMetadataManager.ensureAttachmentMetadataExists(progressSink: nil)
+
         let localFileBackupAttachmentCollector = LocalFileBackupAttachmentCollector()
         localFileBackupAttachmentCollector.append(id: id1)
         localFileBackupAttachmentCollector.append(id: id2)
@@ -89,6 +90,57 @@ struct LocalFileBackupManagerTests {
         let attachmentIds = Set(attachments.map(\.attachmentRowId))
         #expect(attachmentIds.contains(id1))
         #expect(attachmentIds.contains(id2))
+    }
+
+    @Test
+    func testQueueAttachmentsOnlyQueuesDownloadedWithLocalKey() async throws {
+        let downloadedId = db.write { tx in
+            LocalFileBackupTestSupport.insertMockAttachment(AttachmentStream.mock().attachment, tx: tx)
+        }
+
+        try await localFileBackupAttachmentMetadataManager.ensureAttachmentMetadataExists(progressSink: nil)
+
+        let (downloadedWithoutLocalKeyId, offloadedWithLocalKeyId) = db.write { tx in
+            // Downloaded after metadata was ensured, so has no local key.
+            let downloadedWithoutLocalKeyId = LocalFileBackupTestSupport.insertMockAttachment(
+                AttachmentStream.mock().attachment,
+                tx: tx,
+            )
+
+            // Has a local key, e.g. from a past restore, but has since been
+            // offloaded.
+            let plaintextHash = Randomness.generateRandomBytes(32)
+            let offloadedWithLocalKeyId = LocalFileBackupTestSupport.insertMockAttachment(
+                Attachment.mock(
+                    plaintextHash: plaintextHash,
+                    mediaTierInfo: .mock(plaintextHash: plaintextHash),
+                ),
+                tx: tx,
+            )
+            localFileBackupAttachmentMetadataStore.insertNewMetadataIfNeeded(
+                attachmentId: offloadedWithLocalKeyId,
+                unencryptedByteCount: 16,
+                localKey: nil,
+                tx: tx,
+            )
+
+            return (downloadedWithoutLocalKeyId, offloadedWithLocalKeyId)
+        }
+
+        let localFileBackupAttachmentCollector = LocalFileBackupAttachmentCollector()
+        localFileBackupAttachmentCollector.append(id: downloadedId)
+        localFileBackupAttachmentCollector.append(id: downloadedWithoutLocalKeyId)
+        localFileBackupAttachmentCollector.append(id: offloadedWithLocalKeyId)
+
+        try await localFileBackupManager.queueLocalBackupAttachmentsForExport(localFileBackupAttachmentCollector: localFileBackupAttachmentCollector)
+
+        let attachmentIds = try db.read { tx in
+            try BackupLocalFileAttachmentExportRecord
+                .fetchAll(tx.database)
+                .map(\.attachmentRowId)
+        }
+
+        #expect(attachmentIds == [downloadedId])
     }
 
     @Test

@@ -1833,8 +1833,6 @@ extension AppSetup.GlobalsContinuation {
             backupArchiveManager: backupArchiveManager,
             dateProvider: dateProvider,
             db: db,
-            localFileBackupAttachmentMetadataManager: localFileBackupAttachmentMetadataManager,
-            localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
             securityScopedBookmarkAccess: SecurityScopedBookmarkAccessImpl(),
             tsAccountManager: tsAccountManager,
         )

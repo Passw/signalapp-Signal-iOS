@@ -36,7 +36,7 @@ public enum TimeGatedBatch {
     public static func enumerateObjects<T, E>(
         _ objects: some Sequence<T>,
         db: any DB,
-        yieldTxAfter: TimeInterval = 1.0,
+        yieldTxAfter: TimeInterval = 0.5,
         file: String = #file,
         function: String = #function,
         line: Int = #line,

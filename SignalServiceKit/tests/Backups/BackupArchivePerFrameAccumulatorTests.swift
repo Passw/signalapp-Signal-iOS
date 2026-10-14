@@ -139,7 +139,7 @@ struct BackupArchivePerFrameAccumulatorTests {
     ) {
         let attachmentId = attachmentStream.attachment.id
 
-        context.collectLocalFileBackupAttachment(attachmentStream: attachmentStream)
+        context.collectLocalFileBackupAttachment(attachmentId: attachmentId)
         context.addToLocalAttachmentByteCount(attachmentId: attachmentId, byteCount: 10)
         context.addToRemoteAttachmentByteCount(attachmentId: attachmentId, byteCount: 20)
     }

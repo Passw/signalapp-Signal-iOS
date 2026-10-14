@@ -12,14 +12,12 @@ final class PlaintextTakeoutManagerTests {
     private let db: InMemoryDB
     private let destinationFolderUrl: URL
     private let exportDate: Date
-    private let metadataStore: LocalFileBackupAttachmentMetadataStore
     private let plaintextTakeoutManager: PlaintextTakeoutManager
 
     init() throws {
         let backupArchiveManager = BackupArchiveManagerMock()
         let db = InMemoryDB()
         let attachmentStore = AttachmentStore()
-        let metadataStore = LocalFileBackupAttachmentMetadataStore()
         let exportDate = Date()
 
         let destinationFolderUrl = URL(fileURLWithPath: NSTemporaryDirectory())
@@ -33,18 +31,11 @@ final class PlaintextTakeoutManagerTests {
         self.db = db
         self.destinationFolderUrl = destinationFolderUrl
         self.exportDate = exportDate
-        self.metadataStore = metadataStore
         self.plaintextTakeoutManager = PlaintextTakeoutManager(
             attachmentStore: attachmentStore,
             backupArchiveManager: backupArchiveManager,
             dateProvider: { exportDate },
             db: db,
-            localFileBackupAttachmentMetadataManager: LocalFileBackupAttachmentMetadataManager(
-                attachmentStore: attachmentStore,
-                db: db,
-                metadataStore: metadataStore,
-            ),
-            localFileBackupAttachmentMetadataStore: metadataStore,
             securityScopedBookmarkAccess: SecurityScopedBookmarkAccessMock(hasAccess: true, url: nil),
             tsAccountManager: MockTSAccountManager(),
         )
@@ -87,20 +78,14 @@ final class PlaintextTakeoutManagerTests {
         #expect(fileManager.fileExists(atPath: exportDirectoryUrl.appendingPathComponent("main.jsonl").path))
         #expect(fileManager.fileExists(atPath: exportDirectoryUrl.appendingPathComponent("metadata.json").path))
 
-        let localKey = try #require(db.read { tx in
-            metadataStore.metadataRecord(attachmentId: attachmentId, tx: tx)?.localKey
-        })
-        let mediaName = LocalFileBackupAttachmentNaming.mediaName(
-            localKey: localKey,
-            plaintextHash: try #require(attachment.plaintextHash),
-        )
+        let attachmentName = try #require(attachment.plaintextHash).hexadecimalString
         let subdirectoryUrl = exportDirectoryUrl
             .appendingPathComponent("files")
-            .appendingPathComponent(LocalFileBackupAttachmentNaming.subdirectoryName(mediaName: mediaName))
+            .appendingPathComponent(String(attachmentName.prefix(2)))
 
         let attachmentFileNames = try fileManager.contentsOfDirectory(atPath: subdirectoryUrl.path)
         #expect(attachmentFileNames.count == 1)
-        #expect(attachmentFileNames.first?.hasPrefix("\(mediaName).") == true)
+        #expect(attachmentFileNames.first?.hasPrefix("\(attachmentName).") == true)
     }
 
     @Test
@@ -117,11 +102,6 @@ final class PlaintextTakeoutManagerTests {
         #expect(fileManager.fileExists(atPath: exportDirectoryUrl.appendingPathComponent("main.jsonl").path))
         #expect(fileManager.fileExists(atPath: exportDirectoryUrl.appendingPathComponent("metadata.json").path))
         #expect(!fileManager.fileExists(atPath: exportDirectoryUrl.appendingPathComponent("files").path))
-
-        // Attachment metadata prep should have been skipped.
-        #expect(db.read { tx in
-            metadataStore.metadataRecord(attachmentId: attachmentId, tx: tx)
-        } == nil)
     }
 
     @Test

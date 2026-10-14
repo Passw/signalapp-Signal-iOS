@@ -4,8 +4,6 @@
 //
 
 public enum PlaintextTakeoutProgressPhase: String, OWSSequentialProgressStep {
-    /// Ensuring attachments have metadata, such as local keys.
-    case attachmentMetadataPrep
     /// Exporting the Backup file.
     case backupFileExport
     /// Exporting attachments.
@@ -13,8 +11,7 @@ public enum PlaintextTakeoutProgressPhase: String, OWSSequentialProgressStep {
 
     public var progressUnitCount: UInt64 {
         switch self {
-        case .attachmentMetadataPrep: 5
-        case .backupFileExport: 25
+        case .backupFileExport: 30
         case .attachmentExport: 70
         }
     }
@@ -33,8 +30,8 @@ public class PlaintextTakeoutManager {
     /// ├─ main.jsonl
     /// ├─ metadata.json
     /// └─ files/
-    ///    └─ <mediaName prefix>/
-    ///       └─ <mediaName>.<extension>
+    ///    └─ <attachmentName prefix>/
+    ///       └─ <attachmentName>.<extension>
     enum FileStructure {
         static let exportDirectoryPrefix = "signal-export-"
         static let backupFileName = "main.jsonl"
@@ -51,6 +48,17 @@ public class PlaintextTakeoutManager {
         static func exportDirectoryName(date: Date) -> String {
             return "\(exportDirectoryPrefix)\(dateFormatter.string(from: date))"
         }
+
+        /// The file name for an attachment, before any path extension.
+        static func attachmentName(plaintextHash: Data) -> String {
+            return plaintextHash.hexadecimalString
+        }
+
+        /// The name of the subdirectory, within the attachments directory,
+        /// that holds the attachment with the given name.
+        static func attachmentSubdirectoryName(attachmentName: String) -> String {
+            return String(attachmentName.prefix(2))
+        }
     }
 
     private struct Metadata: Encodable {
@@ -63,8 +71,6 @@ public class PlaintextTakeoutManager {
     private let backupArchiveManager: BackupArchiveManager
     private let dateProvider: DateProvider
     private let db: DB
-    private let localFileBackupAttachmentMetadataManager: LocalFileBackupAttachmentMetadataManager
-    private let localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore
     private let logger = PrefixedLogger(prefix: "[PlaintextTakeout]")
     private let securityScopedBookmarkAccess: SecurityScopedBookmarkAccess
     private let tsAccountManager: TSAccountManager
@@ -74,8 +80,6 @@ public class PlaintextTakeoutManager {
         backupArchiveManager: BackupArchiveManager,
         dateProvider: @escaping DateProvider,
         db: DB,
-        localFileBackupAttachmentMetadataManager: LocalFileBackupAttachmentMetadataManager,
-        localFileBackupAttachmentMetadataStore: LocalFileBackupAttachmentMetadataStore,
         securityScopedBookmarkAccess: SecurityScopedBookmarkAccess,
         tsAccountManager: TSAccountManager,
     ) {
@@ -83,8 +87,6 @@ public class PlaintextTakeoutManager {
         self.backupArchiveManager = backupArchiveManager
         self.dateProvider = dateProvider
         self.db = db
-        self.localFileBackupAttachmentMetadataManager = localFileBackupAttachmentMetadataManager
-        self.localFileBackupAttachmentMetadataStore = localFileBackupAttachmentMetadataStore
         self.securityScopedBookmarkAccess = securityScopedBookmarkAccess
         self.tsAccountManager = tsAccountManager
     }
@@ -161,14 +163,8 @@ public class PlaintextTakeoutManager {
     ) async throws {
         let attachmentCollector: LocalFileBackupAttachmentCollector?
         if includeAttachments {
-            // Ensure attachments have the local keys used to name their files.
-            try await localFileBackupAttachmentMetadataManager.ensureAttachmentMetadataExists(
-                progressSink: progress?.child(for: .attachmentMetadataPrep),
-            )
             attachmentCollector = LocalFileBackupAttachmentCollector()
         } else {
-            progress?.child(for: .attachmentMetadataPrep)
-                .addSource(withLabel: "", unitCount: 1).complete()
             attachmentCollector = nil
         }
 
@@ -233,11 +229,6 @@ public class PlaintextTakeoutManager {
 
     // MARK: -
 
-    private struct ExportableAttachment {
-        let attachmentStream: AttachmentStream
-        let localKey: Data
-    }
-
     private func exportAttachments(
         attachmentIds: [Attachment.IDType],
         attachmentDirectoryUrl: URL,
@@ -253,57 +244,44 @@ public class PlaintextTakeoutManager {
         )
 
         let fileCoordinator = NSFileCoordinator()
+        var skippedCount = 0
 
         for attachmentId in attachmentIds {
             try Task.checkCancellation()
             defer { progressSource?.incrementCompletedUnitCount(by: 1) }
 
-            let exportableAttachment: ExportableAttachment? = db.read { tx in
-                guard
-                    let attachment = attachmentStore.fetch(id: attachmentId, tx: tx),
-                    let attachmentStream = attachment.asStream(),
-                    let localKey = localFileBackupAttachmentMetadataStore.metadataRecord(
-                        attachmentId: attachment.id,
-                        tx: tx,
-                    )?.localKey
-                else {
-                    return nil
-                }
-
-                return ExportableAttachment(
-                    attachmentStream: attachmentStream,
-                    localKey: localKey,
-                )
+            let attachmentStream = db.read { tx in
+                attachmentStore.fetch(id: attachmentId, tx: tx)?.asStream()
             }
 
-            guard let exportableAttachment else {
-                // Deleted or offloaded?
-                logger.warn("Attachment \(attachmentId) not exportable!")
+            guard let attachmentStream else {
+                // Not downloaded, or deleted since being collected.
+                skippedCount += 1
                 continue
             }
 
             try exportAttachment(
-                exportableAttachment,
+                attachmentStream,
                 attachmentDirectoryUrl: attachmentDirectoryUrl,
                 fileCoordinator: fileCoordinator,
             )
         }
+
+        if skippedCount > 0 {
+            logger.info("Skipped \(skippedCount) attachments that weren't downloaded.")
+        }
     }
 
     private func exportAttachment(
-        _ exportableAttachment: ExportableAttachment,
+        _ attachmentStream: AttachmentStream,
         attachmentDirectoryUrl: URL,
         fileCoordinator: NSFileCoordinator,
     ) throws {
-        let attachmentStream = exportableAttachment.attachmentStream
-        let localKey = exportableAttachment.localKey
-
-        let mediaName = LocalFileBackupAttachmentNaming.mediaName(
-            localKey: localKey,
+        let attachmentName = FileStructure.attachmentName(
             plaintextHash: attachmentStream.plaintextHash,
         )
         let subdirectoryUrl = attachmentDirectoryUrl.appendingPathComponent(
-            LocalFileBackupAttachmentNaming.subdirectoryName(mediaName: mediaName),
+            FileStructure.attachmentSubdirectoryName(attachmentName: attachmentName),
             isDirectory: true,
         )
 
@@ -311,7 +289,7 @@ public class PlaintextTakeoutManager {
         let decryptedFileUrl = try attachmentStream.makeDecryptedCopy(filename: nil)
         defer { try? OWSFileSystem.deleteFileIfExists(url: decryptedFileUrl) }
 
-        let fileName = "\(mediaName).\(decryptedFileUrl.pathExtension)"
+        let fileName = "\(attachmentName).\(decryptedFileUrl.pathExtension)"
 
         try fileCoordinator.coordinateThrows(writingItemAt: subdirectoryUrl) { writeUrl in
             try FileManager.default.createDirectory(
@@ -319,10 +297,14 @@ public class PlaintextTakeoutManager {
                 withIntermediateDirectories: true,
             )
 
-            try FileManager.default.moveItem(
-                at: decryptedFileUrl,
-                to: writeUrl.appendingPathComponent(fileName),
-            )
+            let fileUrl = writeUrl.appendingPathComponent(fileName)
+
+            // Attachments with the same plaintext hash share a file.
+            guard !FileManager.default.fileExists(atPath: fileUrl.path) else {
+                return
+            }
+
+            try FileManager.default.moveItem(at: decryptedFileUrl, to: fileUrl)
         }
     }
 }

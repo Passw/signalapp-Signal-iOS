@@ -455,25 +455,6 @@ extension ReferencedAttachment {
             localFileBackupAttachmentMetadataStore: localFileBackupAttachmentMetadataStore,
         )
 
-        if proto.locatorInfo.hasLocalKey {
-            context.addToLocalAttachmentByteCount(
-                attachmentId: attachment.id,
-                byteCount: Cryptography.localBackupEncryptedSize(unencryptedSize: UInt64(safeCast: proto.locatorInfo.size)) ?? .max,
-            )
-        } else if
-            let mediaTierInfo = attachment.mediaTierInfo,
-            mediaTierInfo.isUploaded(currentUploadEra: context.currentUploadEra)
-        {
-            let estimatedMediaTierSize = Cryptography.estimatedMediaTierCDNSize(
-                unencryptedSize: UInt64(safeCast: mediaTierInfo.unencryptedByteCount),
-            ) ?? UInt64(UInt32.max)
-
-            context.addToRemoteAttachmentByteCount(
-                attachmentId: attachment.id,
-                byteCount: estimatedMediaTierSize,
-            )
-        }
-
         // Notes:
         // * incrementalMac and incrementalMacChunkSize unsupported by iOS
         return proto
@@ -521,23 +502,44 @@ extension ReferencedAttachment {
             locatorInfo.transitTierUploadTimestamp = transitTierInfoToExport.uploadTimestamp
         }
 
-        // If we are making a local backup, the attachment is downloaded, and we have a
-        // local key, store it to indicate this attachment should be stored to and restored from
-        // the local file backup. Check streamInfo because we may have a local key from a
-        // past restore for an attachment that has since been offloaded.
-        if
-            context.isCollectingLocalFileBackupAttachments,
-            let attachmentStream = attachment.asStream(),
-            let localKey = localFileBackupAttachmentMetadataStore.metadataRecord(
-                attachmentId: attachment.id,
-                tx: context.tx,
-            )?.localKey
-        {
-            context.collectLocalFileBackupAttachment(attachmentStream: attachmentStream)
-            locatorInfo.localKey = localKey
+        if context.isCollectingLocalFileBackupAttachments {
+            context.collectLocalFileBackupAttachment(attachmentId: attachment.id)
+
+            // If the attachment is downloaded and we have a local key, store it
+            // to support restoring the attachment (we'll export the attachment
+            // into the Local File Backup using the localKey). Require it to be
+            // a stream since we may have a localKey from a past restore for an
+            // attachment that we've since offloaded.
+            if
+                let streamInfo = attachment.streamInfo,
+                let localKeyForAttachment = localFileBackupAttachmentMetadataStore.metadataRecord(
+                    attachmentId: attachment.id,
+                    tx: context.tx,
+                )?.localKey
+            {
+                locatorInfo.localKey = localKeyForAttachment
+
+                context.addToLocalAttachmentByteCount(
+                    attachmentId: attachment.id,
+                    byteCount: Cryptography.localBackupEncryptedSize(
+                        unencryptedSize: UInt64(safeCast: streamInfo.unencryptedByteCount),
+                    ) ?? .max,
+                )
+            }
         }
 
         if let mediaTierInfo = attachment.mediaTierInfo {
+            if mediaTierInfo.isUploaded(currentUploadEra: context.currentUploadEra) {
+                let estimatedMediaTierSize = Cryptography.estimatedMediaTierCDNSize(
+                    unencryptedSize: UInt64(safeCast: mediaTierInfo.unencryptedByteCount),
+                ) ?? UInt64(UInt32.max)
+
+                context.addToRemoteAttachmentByteCount(
+                    attachmentId: attachment.id,
+                    byteCount: estimatedMediaTierSize,
+                )
+            }
+
             locatorInfo.key = attachment.encryptionKey
             locatorInfo.size = mediaTierInfo.unencryptedByteCount
             locatorInfo.integrityCheck = .plaintextHash(mediaTierInfo.plaintextHash)

@@ -9,11 +9,4 @@ public class LocalFileBackupAttachmentCollector {
     func append(id: Attachment.IDType) {
         attachments.append(id)
     }
-
-    func removeLast() -> Attachment.IDType? {
-        guard !attachments.isEmpty else {
-            return nil
-        }
-        return attachments.removeLast()
-    }
 }

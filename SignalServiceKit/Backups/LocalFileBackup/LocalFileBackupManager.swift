@@ -457,17 +457,24 @@ public class LocalFileBackupManager: NSObject, UIDocumentPickerDelegate {
     }
 
     func queueLocalBackupAttachmentsForExport(localFileBackupAttachmentCollector: LocalFileBackupAttachmentCollector) async throws(CancellationError) {
-        try await TimeGatedBatch.processAll(
+        try await TimeGatedBatch.enumerateObjects(
+            localFileBackupAttachmentCollector.attachments,
             db: db,
-            processBatch: { tx throws(CancellationError) in
+            block: { attachmentId, tx throws(CancellationError) in
                 if Task.isCancelled {
                     throw CancellationError()
                 }
-                guard let attachmentId = localFileBackupAttachmentCollector.removeLast() else {
-                    return .done(())
+
+                // Only downloaded attachments with a local key are exported.
+                if
+                    attachmentStore.fetch(id: attachmentId, tx: tx)?.asStream() != nil,
+                    localFileBackupAttachmentMetadataStore.metadataRecord(
+                        attachmentId: attachmentId,
+                        tx: tx,
+                    ) != nil
+                {
+                    localFileBackupStore.insertExportRecord(attachmentId: attachmentId, tx: tx)
                 }
-                localFileBackupStore.insertExportRecord(attachmentId: attachmentId, tx: tx)
-                return .more
             },
         )
     }

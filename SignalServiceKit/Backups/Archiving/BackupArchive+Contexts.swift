@@ -125,9 +125,9 @@ extension BackupArchive {
 
         /// Collect the given attachment to be exported alongside a Local File
         /// Backup.
-        func collectLocalFileBackupAttachment(attachmentStream: AttachmentStream) {
+        func collectLocalFileBackupAttachment(attachmentId: Attachment.IDType) {
             owsPrecondition(isCollectingLocalFileBackupAttachments)
-            perFrameAccumulator.attachmentIdsToCollect.append(attachmentStream.attachment.id)
+            perFrameAccumulator.attachmentIdsToCollect.append(attachmentId)
         }
 
         func addToLocalAttachmentByteCount(attachmentId: Attachment.IDType, byteCount: UInt64) {
