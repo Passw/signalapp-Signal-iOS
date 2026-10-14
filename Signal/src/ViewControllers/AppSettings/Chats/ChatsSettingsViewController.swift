@@ -7,7 +7,7 @@ import IntentsUI
 import SignalServiceKit
 import SignalUI
 
-class ChatsSettingsViewController: OWSTableViewController2, UIDocumentPickerDelegate {
+class ChatsSettingsViewController: OWSTableViewController2 {
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -104,8 +104,16 @@ class ChatsSettingsViewController: OWSTableViewController2, UIDocumentPickerDele
 
         if BuildFlags.Backups.takeoutExport {
             let exportChatsSection = OWSTableSection()
+            exportChatsSection.footerTitle = OWSLocalizedString(
+                "SETTINGS_CHATS_EXPORT_FOOTER",
+                comment: "Footer for the section in Chats settings containing a button to export the user's chat history.",
+            )
             exportChatsSection.add(.item(
-                name: "Export Chats",
+                name: OWSLocalizedString(
+                    "SETTINGS_CHATS_EXPORT_BUTTON",
+                    comment: "Title for a button in Chats settings that starts exporting the user's chat history.",
+                ),
+                textColor: .Signal.accent,
                 actionBlock: { [weak self] in
                     self?.didTapExportChats()
                 },
@@ -182,15 +190,103 @@ class ChatsSettingsViewController: OWSTableViewController2, UIDocumentPickerDele
     // MARK: - Export Chats
 
     private func didTapExportChats() {
-        let pickerController = UIDocumentPickerViewController(
-            forOpeningContentTypes: [.folder],
-            asCopy: false,
-        )
-        pickerController.delegate = self
-        present(pickerController, animated: true)
+        Task {
+            guard
+                let authSuccess = await LocalDeviceAuthentication(useCase: .exportChats)
+                    .performBiometricAuth()
+            else {
+                return
+            }
+
+            showExportChatsConfirmationSheet(authSuccess: authSuccess)
+        }
     }
 
-    private func exportChatsWithProgress(folderUrl: URL) {
+    private func showExportChatsConfirmationSheet(
+        authSuccess: LocalDeviceAuthentication.AuthSuccess,
+    ) {
+        let actionSheet = ActionSheetController(
+            title: OWSLocalizedString(
+                "SETTINGS_CHATS_EXPORT_CONFIRMATION_SHEET_TITLE",
+                comment: "Title for a sheet shown when the user starts exporting their chat history from Chats settings.",
+            ),
+            message: OWSLocalizedString(
+                "SETTINGS_CHATS_EXPORT_CONFIRMATION_SHEET_MESSAGE",
+                comment: "Message for a sheet shown when the user starts exporting their chat history from Chats settings.",
+            ),
+        )
+        actionSheet.addAction(ActionSheetAction(
+            title: OWSLocalizedString(
+                "SETTINGS_CHATS_EXPORT_CONFIRMATION_SHEET_WITH_MEDIA_BUTTON",
+                comment: "Title for a button in a sheet shown when the user starts exporting their chat history, which exports their chat history including attachments.",
+            ),
+        ) { [weak self] _ in
+            self?.showExportChatsChooseFolderSheet(includeAttachments: true)
+        })
+        actionSheet.addAction(ActionSheetAction(
+            title: OWSLocalizedString(
+                "SETTINGS_CHATS_EXPORT_CONFIRMATION_SHEET_WITHOUT_MEDIA_BUTTON",
+                comment: "Title for a button in a sheet shown when the user starts exporting their chat history, which exports their chat history excluding attachments.",
+            ),
+        ) { [weak self] _ in
+            self?.showExportChatsChooseFolderSheet(includeAttachments: false)
+        })
+        actionSheet.addAction(.cancel)
+
+        presentActionSheet(actionSheet)
+    }
+
+    private func showExportChatsChooseFolderSheet(
+        includeAttachments: Bool,
+    ) {
+        let actionSheet = ActionSheetController(
+            title: OWSLocalizedString(
+                "SETTINGS_CHATS_EXPORT_CHOOSE_FOLDER_SHEET_TITLE",
+                comment: "Title for a sheet shown before the user chooses a folder to export their chat history into.",
+            ),
+            message: OWSLocalizedString(
+                "SETTINGS_CHATS_EXPORT_CHOOSE_FOLDER_SHEET_MESSAGE",
+                comment: "Message for a sheet shown before the user chooses a folder to export their chat history into.",
+            ),
+        )
+        actionSheet.addAction(ActionSheetAction(
+            title: OWSLocalizedString(
+                "SETTINGS_CHATS_EXPORT_CHOOSE_FOLDER_SHEET_CHOOSE_BUTTON",
+                comment: "Title for a button in a sheet shown before the user chooses a folder to export their chat history into, which opens a folder picker.",
+            ),
+        ) { [weak self] _ in
+            self?.pickFolderAndExportChats(includeAttachments: includeAttachments)
+        })
+        actionSheet.addAction(.cancel)
+
+        presentActionSheet(actionSheet)
+    }
+
+    private func pickFolderAndExportChats(
+        includeAttachments: Bool,
+    ) {
+        Task {
+            guard
+                let folderUrl = try? await DocumentPickerCoordinator().pickDocument(
+                    fromViewController: self,
+                    contentTypes: [.folder],
+                )
+            else {
+                return
+            }
+
+            exportChatsWithProgress(
+                folderUrl: folderUrl,
+                includeAttachments: includeAttachments,
+            )
+        }
+    }
+
+    private func exportChatsWithProgress(
+        folderUrl: URL,
+        includeAttachments: Bool,
+    ) {
+        let deviceSleepManager = DependenciesBridge.shared.deviceSleepManager
         let plaintextTakeoutManager = DependenciesBridge.shared.plaintextTakeoutManager
 
         let (progressUpdates, progressContinuation) = AsyncStream<Float>.makeStream()
@@ -199,18 +295,27 @@ class ChatsSettingsViewController: OWSTableViewController2, UIDocumentPickerDele
         }
 
         Task {
+            let sleepBlock = DeviceSleepBlockObject(blockReason: "chat export")
+            deviceSleepManager?.addBlock(blockObject: sleepBlock)
+            defer { deviceSleepManager?.removeBlock(blockObject: sleepBlock) }
+
             do {
-                try await ModalCircularProgressViewController.presentAndRun(
+                let exportDirectoryUrl = try await ModalCircularProgressViewController.presentAndRun(
                     from: self,
-                    title: "Exporting chats…",
+                    title: OWSLocalizedString(
+                        "SETTINGS_CHATS_EXPORT_PROGRESS_TITLE",
+                        comment: "Title for a progress modal shown while the user's chat history is being exported.",
+                    ),
                     progressUpdates: progressUpdates,
                 ) {
-                    _ = try await plaintextTakeoutManager.exportTakeout(
+                    return try await plaintextTakeoutManager.exportTakeout(
                         destinationFolderUrl: folderUrl,
-                        includeAttachments: true,
+                        includeAttachments: includeAttachments,
                         progress: progressSink,
                     )
                 }
+
+                showExportChatsCompleteSheet(exportDirectoryUrl: exportDirectoryUrl)
             } catch is CancellationError {
                 // Nothing
             } catch {
@@ -223,17 +328,40 @@ class ChatsSettingsViewController: OWSTableViewController2, UIDocumentPickerDele
         }
     }
 
-    // MARK: - UIDocumentPickerDelegate
-
-    func documentPicker(
-        _ controller: UIDocumentPickerViewController,
-        didPickDocumentsAt urls: [URL],
+    private func showExportChatsCompleteSheet(
+        exportDirectoryUrl: URL,
     ) {
-        guard let folderUrl = urls.first else {
-            return
-        }
+        let actionSheet = ActionSheetController(
+            title: OWSLocalizedString(
+                "SETTINGS_CHATS_EXPORT_COMPLETE_SHEET_TITLE",
+                comment: "Title for a sheet shown after the user's chat history has been exported.",
+            ),
+            message: OWSLocalizedString(
+                "SETTINGS_CHATS_EXPORT_COMPLETE_SHEET_MESSAGE",
+                comment: "Message for a sheet shown after the user's chat history has been exported.",
+            ),
+        )
+        actionSheet.addAction(ActionSheetAction(
+            title: OWSLocalizedString(
+                "SETTINGS_CHATS_EXPORT_COMPLETE_SHEET_VIEW_IN_FILES_BUTTON",
+                comment: "Title for a button in a sheet shown after the user's chat history has been exported, which opens the exported folder in the Files app.",
+            ),
+        ) { _ in
+            // The Files app opens "shareddocuments" URLs at the given path.
+            let filesAppUrlString = exportDirectoryUrl.absoluteString.replacingOccurrences(
+                of: "file://",
+                with: "shareddocuments://",
+            )
+            guard let filesAppUrl = URL(string: filesAppUrlString) else {
+                owsFailDebug("Failed to build Files app URL!")
+                return
+            }
 
-        exportChatsWithProgress(folderUrl: folderUrl)
+            UIApplication.shared.open(filesAppUrl)
+        })
+        actionSheet.addAction(ActionSheetAction(title: CommonStrings.okButton))
+
+        presentActionSheet(actionSheet)
     }
 
     // MARK: -

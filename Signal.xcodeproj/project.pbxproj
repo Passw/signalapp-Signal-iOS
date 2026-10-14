@@ -2129,6 +2129,7 @@
 		D904CDDB306D97F900EC6C4E /* ModalCircularProgressViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D904CDDA306D97F900EC6C4E /* ModalCircularProgressViewController.swift */; };
 		D904CDD8306D81A100EC6C4E /* PlaintextTakeoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D904CDD7306D819E00EC6C4E /* PlaintextTakeoutManager.swift */; };
 		D904CDE0306DCA5400EC6C4E /* PlaintextTakeoutManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D904CDDF306DCA4F00EC6C4E /* PlaintextTakeoutManagerTests.swift */; };
+		D904CDDE306DC6E300EC6C4E /* DocumentPickerCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = D904CDDD306DC6DE00EC6C4E /* DocumentPickerCoordinator.swift */; };
 		D90AA3322CC9616B00021CB0 /* chat_item_standard_message_special_attachments_12.txtproto in Resources */ = {isa = PBXBuildFile; fileRef = D90AA2222CC9616A00021CB0 /* chat_item_standard_message_special_attachments_12.txtproto */; };
 		D90AA3332CC9616B00021CB0 /* account_data_03.binproto in Resources */ = {isa = PBXBuildFile; fileRef = D90AA0772CC9616A00021CB0 /* account_data_03.binproto */; };
 		D90AA3342CC9616B00021CB0 /* chat_item_sticker_message_08.binproto in Resources */ = {isa = PBXBuildFile; fileRef = D90AA2B52CC9616A00021CB0 /* chat_item_sticker_message_08.binproto */; };
@@ -6596,6 +6597,7 @@
 		D904CDDA306D97F900EC6C4E /* ModalCircularProgressViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCircularProgressViewController.swift; sourceTree = "<group>"; };
 		D904CDD7306D819E00EC6C4E /* PlaintextTakeoutManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaintextTakeoutManager.swift; sourceTree = "<group>"; };
 		D904CDDF306DCA4F00EC6C4E /* PlaintextTakeoutManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaintextTakeoutManagerTests.swift; sourceTree = "<group>"; };
+		D904CDDD306DC6DE00EC6C4E /* DocumentPickerCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPickerCoordinator.swift; sourceTree = "<group>"; };
 		D90AA0712CC9616A00021CB0 /* account_data_00.binproto */ = {isa = PBXFileReference; lastKnownFileType = file; path = account_data_00.binproto; sourceTree = "<group>"; };
 		D90AA0722CC9616A00021CB0 /* account_data_00.txtproto */ = {isa = PBXFileReference; lastKnownFileType = text; path = account_data_00.txtproto; sourceTree = "<group>"; };
 		D90AA0732CC9616A00021CB0 /* account_data_01.binproto */ = {isa = PBXFileReference; lastKnownFileType = file; path = account_data_01.binproto; sourceTree = "<group>"; };
@@ -11667,6 +11669,7 @@
 				66F98DE12DB71219009F1A86 /* DeviceBatteryLevelManagerImpl.swift */,
 				505347F82DA08548004AF0B5 /* DeviceSleepManagerImpl.swift */,
 				34A95500271B503E00B05242 /* DisplayableText.swift */,
+				D904CDDD306DC6DE00EC6C4E /* DocumentPickerCoordinator.swift */,
 				45CB2FA71CB7146C00E1B343 /* Launch Screen.storyboard */,
 				F93461B8291ED28900366682 /* PaymentDetailsValidity.swift */,
 				F9FAABD729DB55940004B383 /* Progress+Signal.swift */,
@@ -19199,6 +19202,7 @@
 				D900E6F82DE10499004D01A1 /* DisappearingMessagesTimerSettingsViewController.swift in Sources */,
 				D92812DE2FA94B7200667DCF /* DisplayableAccountEntropyPool.swift in Sources */,
 				34A95501271B503E00B05242 /* DisplayableText.swift in Sources */,
+				D904CDDE306DC6E300EC6C4E /* DocumentPickerCoordinator.swift in Sources */,
 				5011D1CB293FC7E000064098 /* DomainFrontingCountryViewController.swift in Sources */,
 				F96B66AA2912B88B004FFFAA /* DonateChoosePaymentMethodSheet.swift in Sources */,
 				F96B66AC2912B88B004FFFAA /* DonateViewController+DonationMode.swift in Sources */,

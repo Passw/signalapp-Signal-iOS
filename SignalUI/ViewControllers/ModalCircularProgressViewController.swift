@@ -66,11 +66,20 @@ class ModalCircularProgressViewController: OWSViewController {
 
     private func updateProgress(percentComplete: Float) {
         progressView.setProgress(percentComplete, animated: true)
-        percentCompleteLabel.text = "\(percentComplete.formatted(.owsPercent())) complete"
+        percentCompleteLabel.text = String.nonPluralLocalizedStringWithFormat(
+            OWSLocalizedString(
+                "MODAL_CIRCULAR_PROGRESS_PERCENT_COMPLETE",
+                comment: "Label on a progress modal indicating how far along some work is. Embeds {{ formatted percentage }}.",
+            ),
+            percentComplete.formatted(.owsPercent()),
+        )
     }
 
     private func didTapCancel() {
-        titleLabel.text = "Cancelling…"
+        titleLabel.text = OWSLocalizedString(
+            "MODAL_CIRCULAR_PROGRESS_CANCELLING_TITLE",
+            comment: "Title for a progress modal shown after the user taps Cancel, while the work is being cancelled.",
+        )
         cancelButton.isEnabled = false
         cancelBlock?()
     }

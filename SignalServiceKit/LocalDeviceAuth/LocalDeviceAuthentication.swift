@@ -12,6 +12,7 @@ public struct LocalDeviceAuthentication {
     public enum UseCase {
         case changeScreenLockSettings
         case enableBackups
+        case exportChats
         case linkNewDevice
         case recoveryKeyReminder
         case transferAccount
@@ -30,6 +31,11 @@ public struct LocalDeviceAuthentication {
                 return OWSLocalizedString(
                     "ENABLE_BACKUPS_AUTHENTICATION_REASON",
                     comment: "Description of how and why Signal iOS uses Touch ID/Face ID/Phone Passcode to turn on backups.",
+                )
+            case .exportChats:
+                return OWSLocalizedString(
+                    "EXPORT_CHATS_AUTHENTICATION_REASON",
+                    comment: "Description of how and why Signal iOS uses Touch ID/Face ID/Phone Passcode to export your chat history.",
                 )
             case .linkNewDevice:
                 return OWSLocalizedString(
