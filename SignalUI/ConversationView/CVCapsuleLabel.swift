@@ -64,7 +64,13 @@ public class CVCapsuleLabel: UILabel {
         addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(didTapMemberLabel)))
 
         let attributedString = NSMutableAttributedString(attributedString: attributedText)
-        applyFontToAttributedString(attributedString, signalSymbolRange: signalSymbolRange)
+        Self.applyFontToAttributedString(
+            attributedString,
+            font: self.font,
+            highlightRange: highlightRange,
+            highlightFont: highlightFont,
+            signalSymbolRange: signalSymbolRange,
+        )
         attributedString.addAttribute(.foregroundColor, value: textColor, range: attributedText.entireRange)
 
         self.attributedText = attributedString
@@ -96,9 +102,15 @@ public class CVCapsuleLabel: UILabel {
         }
     }
 
-    private func applyFontToAttributedString(_ attributedString: NSMutableAttributedString, signalSymbolRange: NSRange?) {
+    private static func applyFontToAttributedString(
+        _ attributedString: NSMutableAttributedString,
+        font: UIFont,
+        highlightRange: NSRange,
+        highlightFont: UIFont,
+        signalSymbolRange: NSRange?,
+    ) {
         guard let signalSymbolRange else {
-            attributedString.addAttribute(.font, value: self.font!, range: attributedString.entireRange)
+            attributedString.addAttribute(.font, value: font, range: attributedString.entireRange)
             // The highlighted text may have different font than the sender name
             attributedString.addAttribute(.font, value: highlightFont, range: highlightRange)
             return
@@ -106,7 +118,7 @@ public class CVCapsuleLabel: UILabel {
 
         // Apply font avoiding the signal symbol
         attributedString.applyAttributesToRangeAvoidingSubrange(
-            attributes: [.font: self.font!],
+            attributes: [.font: font],
             range: attributedString.entireRange,
             subrangeToAvoid: signalSymbolRange,
         )
@@ -128,7 +140,7 @@ public class CVCapsuleLabel: UILabel {
         string: NSAttributedString,
         maxWidth: CGFloat,
         font: UIFont,
-        textColor: UIColor,
+        textColor: UIColor?,
     ) -> NSAttributedString {
         guard string.size().width > maxWidth else {
             return string
@@ -136,11 +148,13 @@ public class CVCapsuleLabel: UILabel {
 
         let ellipsesUnicode = NSMutableAttributedString(string: "\u{2026}")
         ellipsesUnicode.addAttribute(.font, value: font, range: ellipsesUnicode.entireRange)
-        ellipsesUnicode.addAttribute(
-            .foregroundColor,
-            value: textColor,
-            range: ellipsesUnicode.entireRange,
-        )
+        if let textColor {
+            ellipsesUnicode.addAttribute(
+                .foregroundColor,
+                value: textColor,
+                range: ellipsesUnicode.entireRange,
+            )
+        }
         let ellipsesWidth = ellipsesUnicode.size().width
         let newMaxWidth = maxWidth - ellipsesWidth
 
@@ -193,7 +207,7 @@ public class CVCapsuleLabel: UILabel {
         attributedString: NSAttributedString,
         highlightRange: NSRange,
         highlightFont: UIFont,
-        textColor: UIColor,
+        textColor: UIColor?,
         maxWidth: CGFloat,
     ) -> (NSAttributedString, NSRange)? {
         let totalStringWidth = attributedString.size().width
@@ -228,22 +242,24 @@ public class CVCapsuleLabel: UILabel {
         return (attributedString, highlightRange)
     }
 
-    private func textContainerForFormattedString(
+    private static func textContainerForFormattedString(
         layoutManager: NSLayoutManager,
         textStorage: NSTextStorage,
         size: CGSize,
+        numberOfLines: Int,
+        lineBreakMode: NSLineBreakMode,
     ) -> NSTextContainer {
         let textContainer = NSTextContainer(size: size)
         textContainer.lineFragmentPadding = 0
-        textContainer.maximumNumberOfLines = self.numberOfLines
-        textContainer.lineBreakMode = self.lineBreakMode
+        textContainer.maximumNumberOfLines = numberOfLines
+        textContainer.lineBreakMode = lineBreakMode
         layoutManager.addTextContainer(textContainer)
         textStorage.addLayoutManager(layoutManager)
 
         return textContainer
     }
 
-    private func calculateHorizontalOffset() -> CGFloat {
+    private static func calculateHorizontalOffset(textAlignment: NSTextAlignment) -> CGFloat {
         // We only need to offset the capsule & text horizontally if the edge of the view
         // might cut it off because its naturally aligned.
         let needsHorizontalOffset = textAlignment == .natural
@@ -260,7 +276,7 @@ public class CVCapsuleLabel: UILabel {
 
         owsAssertDebug(numberOfLines == 0 || numberOfLines == 1, "CVCapsule wrapping behavior undefined")
 
-        let hOffset = calculateHorizontalOffset()
+        let hOffset = Self.calculateHorizontalOffset(textAlignment: textAlignment)
         let maxWidth = rect.width - (2 * Self.horizontalCapsuleInset + abs(hOffset))
         let formattedStringData = CVCapsuleLabel.formatCapsuleString(
             attributedString: attributedText,
@@ -276,10 +292,12 @@ public class CVCapsuleLabel: UILabel {
 
         let layoutManager = NSLayoutManager()
         let textStorage = NSTextStorage(attributedString: formattedAttributedString)
-        let textContainer = textContainerForFormattedString(
+        let textContainer = Self.textContainerForFormattedString(
             layoutManager: layoutManager,
             textStorage: textStorage,
             size: rect.size,
+            numberOfLines: numberOfLines,
+            lineBreakMode: lineBreakMode,
         )
         let highlightGlyphRange = layoutManager.glyphRange(forCharacterRange: newHighlightRange, actualCharacterRange: nil)
         let highlightColor = capsuleColor
@@ -316,33 +334,63 @@ public class CVCapsuleLabel: UILabel {
         maxWidth: CGFloat,
         signalSymbolRange: NSRange?,
     ) -> CGSize {
-        let label = CVCapsuleLabel(
-            attributedText: attributedText,
-            textColor: .black,
+        // Measure without instantiating a label, since this may be called off
+        // the main thread. Mirrors the default label configuration.
+        let attributedString = NSMutableAttributedString(attributedString: attributedText)
+        applyFontToAttributedString(
+            attributedString,
             font: font,
             highlightRange: highlightRange,
             highlightFont: highlightFont,
-            axLabelPrefix: nil,
-            presentationContext: presentationContext,
             signalSymbolRange: signalSymbolRange,
-            onTap: nil,
         )
-        return label.labelSize(maxWidth: maxWidth)
+
+        return labelSize(
+            attributedText: attributedString,
+            highlightRange: highlightRange,
+            highlightFont: highlightFont,
+            textAlignment: .natural,
+            numberOfLines: 0,
+            lineBreakMode: .byTruncatingTail,
+            maxWidth: maxWidth,
+        )
     }
 
     public func labelSize(maxWidth: CGFloat) -> CGSize {
-        guard let attributedText, !attributedText.isEmpty else { return .zero }
-        let hOffset = calculateHorizontalOffset()
+        guard let attributedText else { return .zero }
+        return Self.labelSize(
+            attributedText: attributedText,
+            highlightRange: highlightRange,
+            highlightFont: highlightFont,
+            textAlignment: textAlignment,
+            numberOfLines: numberOfLines,
+            lineBreakMode: lineBreakMode,
+            maxWidth: maxWidth,
+        )
+    }
 
-        let maxWidthMinusInsets = maxWidth - (abs(hOffset) + Self.horizontalCapsuleInset * 2)
+    private static func labelSize(
+        attributedText: NSAttributedString,
+        highlightRange: NSRange,
+        highlightFont: UIFont,
+        textAlignment: NSTextAlignment,
+        numberOfLines: Int,
+        lineBreakMode: NSLineBreakMode,
+        maxWidth: CGFloat,
+    ) -> CGSize {
+        guard !attributedText.isEmpty else { return .zero }
+        let hOffset = calculateHorizontalOffset(textAlignment: textAlignment)
+
+        let maxWidthMinusInsets = maxWidth - (abs(hOffset) + horizontalCapsuleInset * 2)
 
         owsAssertDebug(numberOfLines == 0 || numberOfLines == 1, "CVCapsule wrapping behavior undefined")
 
-        let formattedStringData = CVCapsuleLabel.formatCapsuleString(
+        let formattedStringData = formatCapsuleString(
             attributedString: attributedText,
             highlightRange: highlightRange,
             highlightFont: highlightFont,
-            textColor: textColor,
+            // Color doesn't affect size.
+            textColor: nil,
             maxWidth: maxWidthMinusInsets,
         )
 
@@ -358,11 +406,13 @@ public class CVCapsuleLabel: UILabel {
             layoutManager: layoutManager,
             textStorage: textStorage,
             size: size,
+            numberOfLines: numberOfLines,
+            lineBreakMode: lineBreakMode,
         )
 
         let measureSize = layoutManager.usedRect(for: textContainer).size.ceil
-        let finalHeight = measureSize.height + Self.verticalOffset + Self.verticalCapsuleInset * 2
-        let finalWidth = measureSize.width + Self.horizontalCapsuleInset * 2 + abs(hOffset)
+        let finalHeight = measureSize.height + verticalOffset + verticalCapsuleInset * 2
+        let finalWidth = measureSize.width + horizontalCapsuleInset * 2 + abs(hOffset)
         return CGSize(width: finalWidth, height: finalHeight)
     }
 
