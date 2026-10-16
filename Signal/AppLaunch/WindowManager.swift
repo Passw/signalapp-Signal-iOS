@@ -58,6 +58,13 @@ class WindowManager {
             return [root, screenBlocking] + createdWindows
         }
 
+        /// The screen blocking window is excluded, so it can stand in for the
+        /// app in the App Switcher when screenshots are blocked. (Note that
+        /// this is the same window used by Screen Lock.)
+        private var screenshotBlockableWindows: [UIWindow] {
+            return allWindows.filter { $0 !== screenBlocking }
+        }
+
         init(
             blocksScreenshots: Bool,
             root: UIWindow,
@@ -72,7 +79,6 @@ class WindowManager {
             self.windowScene = windowScene
 
             ScreenshotBlocking.setBlocksScreenshots(blocksScreenshots, of: root)
-            ScreenshotBlocking.setBlocksScreenshots(blocksScreenshots, of: screenBlocking)
         }
 
         // UIWindow.Level._returnToCall
@@ -140,7 +146,7 @@ class WindowManager {
         func setBlocksScreenshots(_ blocksScreenshots: Bool) {
             self.blocksScreenshots = blocksScreenshots
 
-            for window in allWindows {
+            for window in screenshotBlockableWindows {
                 ScreenshotBlocking.setBlocksScreenshots(blocksScreenshots, of: window)
             }
         }
@@ -225,7 +231,7 @@ class WindowManager {
     /// Starts out matching the default of the preference that drives it,
     /// since that isn't readable until the database is — which can be after
     /// the windows exist.
-    private var blocksScreenshots: Bool = ScreenshotBlockingManager.isAvailable
+    private(set) var blocksScreenshots: Bool = ScreenshotBlockingManager.isAvailable
 
     /// Sets whether the app's windows are blocked from appearing in
     /// screenshots.

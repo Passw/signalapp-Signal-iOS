@@ -78,10 +78,16 @@ open class ScreenLockViewController: UIViewController {
 
         guard isViewLoaded else { return }
 
-        let shouldShowBlockWindow = uiState != .none
-        let shouldHaveScreenLock = uiState == .screenLock
+        let shouldHaveScreenLock: Bool
+        switch uiState {
+        case .none:
+            shouldHaveScreenLock = false
+        case .screenProtection:
+            shouldHaveScreenLock = false
+        case .screenLock:
+            shouldHaveScreenLock = true
+        }
 
-        imageViewLogo.isHidden = !shouldShowBlockWindow
         buttonUnlockUI.isHidden = !shouldHaveScreenLock
     }
 

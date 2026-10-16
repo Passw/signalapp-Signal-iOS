@@ -275,14 +275,22 @@ class ScreenLockUI {
             !viewController.isViewLoaded || viewController.view.window == nil
         })
 
-        guard
-            SSKEnvironment.shared.preferencesRef.isScreenSecurityEnabled
-            || sensitiveContentViewControllers.elements.count > 0
-        else {
-            return .none
+        if SSKEnvironment.shared.preferencesRef.isScreenSecurityEnabled {
+            return .screenProtection
         }
 
-        return .screenProtection
+        if sensitiveContentViewControllers.elements.count > 0 {
+            return .screenProtection
+        }
+
+        // When we're blocking screenshots and not foreground, enable screen
+        // protection. Because screenshots are blocked the App Switcher will
+        // otherwise show a blank snapshot of the app.
+        if AppEnvironment.shared.windowManagerRef.blocksScreenshots {
+            return .screenProtection
+        }
+
+        return .none
     }
 
     private func tryToPresentAuthUIToUnlockScreenLock() {
