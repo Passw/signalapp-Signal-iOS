@@ -76,22 +76,40 @@ extension Registration {
             }
         }
 
+        private static func baseLargeSecondaryButtonStyleBody(
+            configuration: PrimitiveButtonStyle.Configuration,
+        ) -> some View {
+            Button(action: configuration.trigger) {
+                HStack {
+                    Spacer()
+                    configuration.label
+                        .font(.headline)
+                        .foregroundColor(UI.secondaryButtonForegroundColor())
+                    Spacer()
+                }
+                .padding(UI.largeButtonContentPadding)
+            }
+            .buttonStyle(UI.secondaryButtonStyle())
+            .buttonBorderShape(UI.buttonBorderShape())
+        }
+
         struct LargeSecondaryButtonStyle: PrimitiveButtonStyle {
             @ViewBuilder
             func makeBody(configuration: Configuration) -> some View {
-                Button(action: configuration.trigger) {
-                    HStack {
-                        Spacer()
-                        configuration.label
-                            .font(.headline)
-                            .foregroundColor(UI.secondaryButtonForegroundColor())
-                        Spacer()
-                    }
-                    .padding(UI.largeButtonContentPadding)
-                }
-                .buttonStyle(UI.secondaryButtonStyle())
-                .buttonBorderShape(UI.buttonBorderShape())
+                Registration.UI.baseLargeSecondaryButtonStyleBody(
+                    configuration: configuration,
+                )
                 .tint(.clear)
+            }
+        }
+
+        struct LargeSecondaryHeroButtonStyle: PrimitiveButtonStyle {
+            @ViewBuilder
+            func makeBody(configuration: Configuration) -> some View {
+                Registration.UI.baseLargeSecondaryButtonStyleBody(
+                    configuration: configuration,
+                )
+                .tint(.Signal.secondaryFill)
             }
         }
 

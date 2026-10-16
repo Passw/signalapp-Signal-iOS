@@ -48,7 +48,13 @@ class DeviceTransferStatusViewController: HostingController<TransferWrapperView>
         }
 
         coordinator.transferStatusViewModel.choosePeerBlock = { [weak self] in
-            self?.presentChooseDeviceToPairWithPrompt()
+            if
+                let self,
+                #available(iOS 26, *),
+                self.coordinator.supportsWifiAware
+            {
+                self.presentChooseDeviceToPairWithPrompt()
+            }
         }
 
         coordinator.onSuccess = { [weak self] in
@@ -122,7 +128,12 @@ class DeviceTransferStatusViewController: HostingController<TransferWrapperView>
         Task {
             do {
                 try await coordinator.reportTransferMethodChoice()
-                presentChooseDeviceToPairWithPrompt()
+                if
+                    #available(iOS 26, *),
+                    coordinator.supportsWifiAware
+                {
+                    presentChooseDeviceToPairWithPrompt()
+                }
                 try await coordinator.waitForTransferFromPeer(peer: nil)
             } catch {
                 coordinator.onFailure(error)
@@ -130,6 +141,7 @@ class DeviceTransferStatusViewController: HostingController<TransferWrapperView>
         }
     }
 
+    @available(iOS 26, *)
     private func presentChooseDeviceToPairWithPrompt() {
         let title: String
         if coordinator.transferStatusViewModel.discoveredPeers.count > 1 {
@@ -158,19 +170,6 @@ class DeviceTransferStatusViewController: HostingController<TransferWrapperView>
             }),
         )
 
-        let secondaryButton = HeroSheetViewController.Button(
-            title: OWSLocalizedString(
-                "INCOMING_DEVICE_TRANSFER_CHOOSE_OLD_DEVICE_PAIR_NEW_ACTION",
-                comment: "Title of action allowing user to pair a new device transfer peer.",
-            ),
-            style: .secondary,
-            action: .custom({ [weak self] sheet in
-                sheet.dismiss(animated: true) { [weak self] in
-                    self?.coordinator.transferStatusViewModel.showPairingView = true
-                }
-            }),
-        )
-
         let sheet = HeroSheetViewController(
             hero: .image(UIImage(resource: .transferConfirm)),
             title: OWSLocalizedString(
@@ -182,7 +181,32 @@ class DeviceTransferStatusViewController: HostingController<TransferWrapperView>
                 comment: "Body of prompt asking user to select device transfer target.",
             )))]),
             primary: .button(primaryButton),
-            secondary: .button(secondaryButton),
+            secondary: .custom({ heroSheetVC in
+                let hostingController = HostingController(
+                    wrappedView: DevicePairingView(
+                        .wifiAware(
+                            .connecting(
+                                to: .deviceTransferService,
+                                from: .allPairedDevices,
+                            ),
+                        ),
+                        label: {
+                            Button(OWSLocalizedString(
+                                "INCOMING_DEVICE_TRANSFER_CHOOSE_OLD_DEVICE_PAIR_NEW_ACTION",
+                                comment: "Title of action allowing user to pair a new device transfer peer.",
+                            )) {}
+                                .buttonStyle(Registration.UI.LargeSecondaryHeroButtonStyle())
+                                .allowsHitTesting(false) // necessary to let touches pass to DevicePairingView
+                        },
+                        fallback: {},
+                    ),
+                )
+                hostingController.view.backgroundColor = .clear
+                heroSheetVC.addChild(hostingController)
+                hostingController.view.translatesAutoresizingMaskIntoConstraints = false
+                hostingController.didMove(toParent: self)
+                return hostingController.view
+            }),
         )
         present(sheet, animated: true)
     }
@@ -299,7 +323,7 @@ struct TransferPairingView: View {
                         .buttonStyle(Registration.UI.LargePrimaryButtonStyle())
                         .allowsHitTesting(false) // necessary to let touches pass to DevicePicker
                 } fallback: {}
-            } else if viewModel.discoveredPeers.isEmpty || viewModel.showPairingView {
+            } else if viewModel.discoveredPeers.isEmpty {
                 DevicePairingView(
                     .wifiAware(
                         .connecting(

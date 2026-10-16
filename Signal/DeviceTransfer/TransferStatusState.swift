@@ -142,7 +142,6 @@ class TransferStatusViewModel: ObservableObject {
     @Published var supportsWifiAware: Bool = false
     @Published var selectedPeer: (any DeviceTransfer.Peer)?
     @Published var discoveredPeers: [any DeviceTransfer.Peer] = []
-    @Published var showPairingView: Bool = false
 
     var confirmCancellation: (() async -> Bool) = { return true }
     var cancelTransferBlock: (() -> Void) = {}
