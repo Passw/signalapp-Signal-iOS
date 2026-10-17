@@ -336,6 +336,13 @@ private struct AppAttestManager {
             throw OWSAssertionError("Failed to convert keyId to data performing attestation action!", logger: logger)
         }
 
+        if DebugFlags.internalLogging {
+            let assertion = requestAssertion.assertion
+            let requestData = requestAssertion.requestData
+            logger.info("Assertion (\(assertion.count) bytes): \(assertion.asBase64Url)")
+            logger.info("Asserted request (\(requestData.count) bytes): \(requestData.asBase64Url)")
+        }
+
         do {
             _ = try await networkManager.asyncRequest(.performAttestationAction(
                 keyIdData: keyIdData,
