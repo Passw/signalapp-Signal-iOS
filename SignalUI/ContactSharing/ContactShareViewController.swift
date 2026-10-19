@@ -165,7 +165,12 @@ public class ContactShareViewController: OWSTableViewController2, ApprovalFooter
                 guard let contactName = self?.contactShareDraft.displayName else {
                     return OWSTableItem.newCell()
                 }
-                return ContactShareFieldCell.contactNameCell(for: contactName)
+
+                let organizationName = self?.contactShareDraft.name.organizationName?.strippedOrNil
+                return ContactShareFieldCell.contactNameCell(
+                    contactName: contactName,
+                    organizationName: organizationName == contactName ? nil : organizationName,
+                )
             },
             actionBlock: { [weak self] in
                 self?.openContactNameEditingView()
@@ -338,11 +343,14 @@ public class ContactShareViewController: OWSTableViewController2, ApprovalFooter
             updateCheckmarkState()
         }
 
-        class func contactNameCell(for contactName: String) -> UITableViewCell {
+        class func contactNameCell(contactName: String, organizationName: String?) -> UITableViewCell {
             let checkmark = SelectionIndicatorView()
             checkmark.isSelected = true
 
-            let nameField = ContactFieldViewHelper.contactFieldView(forContactName: contactName)
+            let nameField = ContactFieldViewHelper.contactFieldView(
+                forContactName: contactName,
+                organizationName: organizationName,
+            )
 
             return disclosureCell(checkmark: checkmark, fieldView: nameField, verticalMargin: 14)
         }

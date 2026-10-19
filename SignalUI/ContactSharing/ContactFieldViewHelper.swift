@@ -24,8 +24,29 @@ public class ContactFieldViewHelper {
         return containerView
     }
 
-    public class func contactFieldView(forContactName contactName: String) -> UIView {
-        return simpleFieldView(name: nil, value: contactName)
+    public class func contactFieldView(forContactName contactName: String, organizationName: String?) -> UIView {
+        let stackView = UIStackView()
+        stackView.axis = .vertical
+        stackView.alignment = .leading
+        stackView.spacing = 3
+
+        let nameLabel = UILabel()
+        nameLabel.text = contactName
+        nameLabel.font = .dynamicTypeBody
+        nameLabel.textColor = .Signal.label
+        nameLabel.lineBreakMode = .byTruncatingTail
+        stackView.addArrangedSubview(nameLabel)
+
+        if let organizationName {
+            let organizationLabel = UILabel()
+            organizationLabel.text = organizationName
+            organizationLabel.font = .dynamicTypeSubheadline
+            organizationLabel.textColor = .Signal.secondaryLabel
+            organizationLabel.lineBreakMode = .byTruncatingTail
+            stackView.addArrangedSubview(organizationLabel)
+        }
+
+        return stackView
     }
 
     public class func contactFieldView(forOrganizationName organizationName: String) -> UIView {
@@ -70,7 +91,7 @@ public class ContactFieldViewHelper {
             let nameLabel = UILabel()
             nameLabel.text = name.lowercased()
             nameLabel.font = .dynamicTypeSubheadline
-            nameLabel.textColor = Theme.secondaryTextAndIconColor
+            nameLabel.textColor = .Signal.secondaryLabel
             nameLabel.lineBreakMode = .byTruncatingTail
             stackView.addArrangedSubview(nameLabel)
         }
@@ -78,7 +99,7 @@ public class ContactFieldViewHelper {
         let valueLabel = UILabel()
         valueLabel.text = value
         valueLabel.font = .dynamicTypeBody
-        valueLabel.textColor = Theme.primaryTextColor
+        valueLabel.textColor = .Signal.label
         if isMultiline {
             valueLabel.lineBreakMode = .byWordWrapping
             valueLabel.numberOfLines = 0
@@ -101,7 +122,7 @@ public class ContactFieldViewHelper {
         let nameLabel = UILabel()
         nameLabel.text = address.localizedLabel
         nameLabel.font = UIFont.dynamicTypeSubheadline
-        nameLabel.textColor = Theme.secondaryTextAndIconColor
+        nameLabel.textColor = .Signal.secondaryLabel
         nameLabel.lineBreakMode = .byTruncatingTail
         stackView.addArrangedSubview(nameLabel)
 
@@ -113,7 +134,7 @@ public class ContactFieldViewHelper {
             let valueLabel = UILabel()
             valueLabel.text = formattedAddress
             valueLabel.font = UIFont.dynamicTypeBody
-            valueLabel.textColor = Theme.primaryTextColor
+            valueLabel.textColor = .Signal.label
             valueLabel.lineBreakMode = .byWordWrapping
             valueLabel.numberOfLines = 0
             stackView.addArrangedSubview(valueLabel)
