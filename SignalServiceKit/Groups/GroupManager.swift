@@ -270,8 +270,33 @@ public class GroupManager: NSObject {
         )
     }
 
+    /// Applies a local change, bumping the timer version.
     public static func localUpdateDisappearingMessageToken(
-        _ disappearingMessageToken: VersionedDisappearingMessageToken,
+        token: DisappearingMessageToken,
+        inContactThread contactThread: TSContactThread,
+        tx: DBWriteTransaction,
+    ) {
+        guard
+            let versionedToken = try? DependenciesBridge.shared.disappearingMessagesConfigurationStore
+                .versionedTokenForLocalChange(
+                    token: token,
+                    contactThread: contactThread,
+                    tx: tx,
+                )
+        else {
+            return
+        }
+
+        localUpdateDisappearingMessageToken(
+            versionedToken: versionedToken,
+            inContactThread: contactThread,
+            tx: tx,
+        )
+    }
+
+    /// Applies a local change using the given version as-is.
+    public static func localUpdateDisappearingMessageToken(
+        versionedToken: VersionedDisappearingMessageToken,
         inContactThread contactThread: TSContactThread,
         tx: DBWriteTransaction,
     ) {
@@ -280,7 +305,7 @@ public class GroupManager: NSObject {
             return
         }
         let updateResult = self.updateDisappearingMessagesInDatabaseAndCreateMessages(
-            newToken: disappearingMessageToken,
+            newToken: versionedToken,
             contactThread: contactThread,
             changeAuthor: localIdentifiers.aci,
             localIdentifiers: localIdentifiers,

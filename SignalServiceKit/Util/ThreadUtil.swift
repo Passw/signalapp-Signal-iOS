@@ -272,20 +272,24 @@ extension ThreadUtil {
 
     private static func setUniversalTimer(contactThread: TSContactThread, tx: DBWriteTransaction) {
         let dmConfigurationStore = DependenciesBridge.shared.disappearingMessagesConfigurationStore
+
         let dmUniversalToken = dmConfigurationStore.fetchOrBuildDefault(for: .universal, tx: tx)
-        let version = dmConfigurationStore.fetchOrBuildDefault(
-            for: .thread(contactThread),
-            tx: tx,
-        ).timerVersion
+        guard
+            let newToken = try? dmConfigurationStore.versionedTokenForLocalChange(
+                token: dmUniversalToken.asToken,
+                contactThread: contactThread,
+                tx: tx,
+            )
+        else {
+            return
+        }
+
         let dmResult = dmConfigurationStore.set(
-            token: .init(
-                isEnabled: dmUniversalToken.isEnabled,
-                durationSeconds: dmUniversalToken.durationSeconds,
-                version: version,
-            ),
+            token: newToken,
             for: .thread(contactThread),
             tx: tx,
         )
+
         OWSDisappearingConfigurationUpdateInfoMessage(
             contactThread: contactThread,
             timestamp: MessageTimestampGenerator.sharedInstance.generateTimestamp(),

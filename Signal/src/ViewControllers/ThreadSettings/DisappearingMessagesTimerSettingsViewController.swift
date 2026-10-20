@@ -131,7 +131,7 @@ class DisappearingMessagesTimerSettingsViewController:
                 }
                 try await self.localUpdateDisappearingMessagesConfiguration(
                     thread: thread,
-                    newToken: configuration.asVersionedToken,
+                    newToken: configuration.asToken,
                 )
             },
             completion: { [weak self] in
@@ -143,12 +143,12 @@ class DisappearingMessagesTimerSettingsViewController:
 
     private func localUpdateDisappearingMessagesConfiguration(
         thread: TSThread,
-        newToken: VersionedDisappearingMessageToken,
+        newToken: DisappearingMessageToken,
     ) async throws {
         if let contactThread = thread as? TSContactThread {
             await SSKEnvironment.shared.databaseStorageRef.awaitableWrite { tx in
                 GroupManager.localUpdateDisappearingMessageToken(
-                    newToken,
+                    token: newToken,
                     inContactThread: contactThread,
                     tx: tx,
                 )
@@ -159,7 +159,7 @@ class DisappearingMessagesTimerSettingsViewController:
                     secretParams: groupV2Model.secretParams(),
                     description: "Update disappearing messages",
                 ) { changeSet in
-                    changeSet.setNewDisappearingMessageToken(newToken.unversioned)
+                    changeSet.setNewDisappearingMessageToken(newToken)
                 }
             } else {
                 throw OWSAssertionError("Cannot update disappearing message config for V1 groups!")
@@ -175,7 +175,6 @@ class DisappearingMessagesTimerSettingsViewController:
         selectedConfiguration = initialConfiguration
         selectedConfiguration.isEnabled = durationSeconds != 0
         selectedConfiguration.durationSeconds = durationSeconds
-        selectedConfiguration.timerVersion = initialConfiguration.timerVersion + 1
         updateNavigationItem()
     }
 

@@ -127,7 +127,11 @@ final class ThreadMerger {
             return
         }
 
-        disappearingMessagesConfigurationManager.setToken(newConfig.asVersionedToken, for: threadPair.intoValue, tx: tx)
+        disappearingMessagesConfigurationManager.setToken(
+            versionedToken: newConfig.asVersionedToken,
+            for: threadPair.intoValue,
+            tx: tx,
+        )
     }
 
     private func mergeThreadReplyInfo(_ threadPair: MergePair<TSContactThread>, tx: DBWriteTransaction) {
@@ -355,12 +359,24 @@ extension ThreadMerger {
 }
 
 protocol _ThreadMerger_DisappearingMessagesConfigurationManagerShim {
-    func setToken(_ token: VersionedDisappearingMessageToken, for thread: TSContactThread, tx: DBWriteTransaction)
+    func setToken(
+        versionedToken: VersionedDisappearingMessageToken,
+        for thread: TSContactThread,
+        tx: DBWriteTransaction,
+    )
 }
 
 class _ThreadMerger_DisappearingMessagesConfigurationManagerWrapper: _ThreadMerger_DisappearingMessagesConfigurationManagerShim {
-    func setToken(_ token: VersionedDisappearingMessageToken, for thread: TSContactThread, tx: DBWriteTransaction) {
-        GroupManager.localUpdateDisappearingMessageToken(token, inContactThread: thread, tx: tx)
+    func setToken(
+        versionedToken: VersionedDisappearingMessageToken,
+        for thread: TSContactThread,
+        tx: DBWriteTransaction,
+    ) {
+        GroupManager.localUpdateDisappearingMessageToken(
+            versionedToken: versionedToken,
+            inContactThread: thread,
+            tx: tx,
+        )
     }
 }
 
@@ -422,8 +438,8 @@ class ThreadMerger_MockDisappearingMessagesConfigurationManager: ThreadMerger.Sh
         self.store = disappearingMessagesConfigurationStore
     }
 
-    func setToken(_ token: VersionedDisappearingMessageToken, for thread: TSContactThread, tx: DBWriteTransaction) {
-        self.store.set(token: token, for: .thread(thread), tx: tx)
+    func setToken(versionedToken: VersionedDisappearingMessageToken, for thread: TSContactThread, tx: DBWriteTransaction) {
+        self.store.set(token: versionedToken, for: .thread(thread), tx: tx)
     }
 }
 

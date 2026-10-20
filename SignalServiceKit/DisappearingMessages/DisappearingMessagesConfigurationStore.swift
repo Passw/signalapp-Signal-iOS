@@ -66,6 +66,29 @@ extension DisappearingMessagesConfigurationStore {
             tx: tx,
         )
     }
+
+    /// Builds a token for a local change to a contact thread's DM timer, with
+    /// a bumped version so the change always takes effect.
+    func versionedTokenForLocalChange(
+        token: DisappearingMessageToken,
+        contactThread: TSContactThread,
+        tx: DBReadTransaction,
+    ) throws(OWSAssertionError) -> VersionedDisappearingMessageToken {
+        let currentVersion = fetchOrBuildDefault(
+            for: .thread(contactThread),
+            tx: tx,
+        ).timerVersion
+
+        guard currentVersion < .max else {
+            throw OWSAssertionError("Cannot change DM timer: version is at max!")
+        }
+
+        return VersionedDisappearingMessageToken(
+            isEnabled: token.isEnabled,
+            durationSeconds: token.durationSeconds,
+            version: currentVersion + 1,
+        )
+    }
 }
 
 public enum DisappearingMessagesConfigurationScope {
