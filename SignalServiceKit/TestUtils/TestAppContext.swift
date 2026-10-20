@@ -52,7 +52,6 @@ public class TestAppContext: NSObject, AppContext {
     public let type: SignalServiceKit.AppContextType = .main
     public let isMainAppAndActive: Bool = true
     public let isMainAppAndActiveIsolated: Bool = true
-    public func mainApplicationStateOnLaunch() -> UIApplication.State { .inactive }
     public let isRTL: Bool = false
     public func isInBackground() -> Bool { false }
     public func isAppForegroundAndActive() -> Bool { true }

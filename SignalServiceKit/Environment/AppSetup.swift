@@ -68,7 +68,7 @@ extension AppSetup.SchemaMigrationContinuation {
     }
 
     private func shouldTruncateGrdbWal() -> Bool {
-        appContext.isMainApp && appContext.mainApplicationStateOnLaunch() != .background
+        appContext.isMainApp && !appContext.isInBackground()
     }
 }
 

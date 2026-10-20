@@ -89,8 +89,6 @@ public protocol AppContext {
     func appDatabaseBaseDirectoryPath() -> String
     func appUserDefaults() -> UserDefaults
 
-    /// This method should only be called by the main app.
-    func mainApplicationStateOnLaunch() -> UIApplication.State
     func canPresentNotifications() -> Bool
     var shouldProcessIncomingMessages: Bool { get }
     var hasUI: Bool { get }

@@ -13,18 +13,13 @@ class MainAppContext: NSObject, AppContext {
     let appLaunchTime: Date
 
     override init() {
-        let applicationState = UIApplication.shared.applicationState
-        _reportedApplicationState = AtomicValue(applicationState, lock: .init())
+        _reportedApplicationState = AtomicValue(UIApplication.shared.applicationState, lock: .init())
 
         let launchDate = Date()
         appLaunchTime = launchDate
-        _mainApplicationStateOnLaunch = applicationState
 
         super.init()
     }
-
-    private let _mainApplicationStateOnLaunch: UIApplication.State
-    func mainApplicationStateOnLaunch() -> UIApplication.State { _mainApplicationStateOnLaunch }
 
     private let _reportedApplicationState: AtomicValue<UIApplication.State>
     var reportedApplicationState: UIApplication.State {

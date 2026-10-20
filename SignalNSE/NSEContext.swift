@@ -14,7 +14,6 @@ class NSEContext: NSObject, AppContext {
 
     func isInBackground() -> Bool { true }
     func isAppForegroundAndActive() -> Bool { false }
-    func mainApplicationStateOnLaunch() -> UIApplication.State { .inactive }
     var shouldProcessIncomingMessages: Bool { true }
     var hasUI: Bool { false }
     func canPresentNotifications() -> Bool { true }

@@ -184,11 +184,6 @@ extension ShareAppExtensionContext: AppContext {
         return UserDefaults(suiteName: TSConstants.applicationGroup)!
     }
 
-    func mainApplicationStateOnLaunch() -> UIApplication.State {
-        owsFailBeta("Not main app.")
-        return .inactive
-    }
-
     func canPresentNotifications() -> Bool { false }
 
     var shouldProcessIncomingMessages: Bool { false }
