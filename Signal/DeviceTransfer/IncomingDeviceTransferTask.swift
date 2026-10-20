@@ -253,9 +253,7 @@ class IncomingDeviceTransferTask {
 
         // Check if there is enough space on disk to receive the transfer
         guard
-            let freeSpaceInBytes = try? OWSFileSystem.freeSpaceInBytes(
-                forPath: DeviceTransfer.Constants.pendingTransferDirectory,
-            )
+            let freeSpaceInBytes = try? OWSFileSystem.freeSpaceInBytes()
         else {
             return await failTransfer(
                 DeviceTransfer.Error.assertion,

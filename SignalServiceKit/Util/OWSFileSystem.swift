@@ -393,13 +393,14 @@ public enum OWSFileSystem {
 
     // MARK: - Remaining space
 
-    /// Get the remaining free space for a path's volume in bytes.
+    /// Get the remaining free space, in bytes, for the volume holding the shared
+    /// app container.
     ///
     /// See [Apple's example][0]. It checks "important" storage (versus "opportunistic" storage).
     ///
     /// [0]: https://developer.apple.com/documentation/foundation/nsurlresourcekey/checking_volume_storage_capacity
-    public static func freeSpaceInBytes(forPath path: URL) throws -> UInt64 {
-        let resourceValues = try path.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
+    public static func freeSpaceInBytes() throws -> UInt64 {
+        let resourceValues = try appSharedDataDirectoryURL().resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
         guard let result = resourceValues.volumeAvailableCapacityForImportantUsage else {
             throw OWSAssertionError("Missing expected resource value!")
         }
@@ -409,12 +410,13 @@ public enum OWSFileSystem {
         return UInt64(result)
     }
 
-    /// Get the total capacity for a path's volume in bytes.
+    /// Get the total capacity, in bytes, for the volume holding the shared app
+    /// container.
     ///
     /// This is the full size of the volume, including occupied space (e.g.,
     /// ~16GB for a 16GB device), not just the space available to the app.
-    public static func totalSpaceInBytes(forPath path: URL) throws -> UInt64 {
-        let resourceValues = try path.resourceValues(forKeys: [.volumeTotalCapacityKey])
+    public static func totalSpaceInBytes() throws -> UInt64 {
+        let resourceValues = try appSharedDataDirectoryURL().resourceValues(forKeys: [.volumeTotalCapacityKey])
         guard let result = resourceValues.volumeTotalCapacity else {
             throw OWSAssertionError("Missing expected resource value!")
         }

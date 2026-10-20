@@ -595,10 +595,7 @@ class BackupAttachmentDownloadQueueStatusManagerImpl: BackupAttachmentDownloadQu
 
     private nonisolated func getAvailableDiskSpace() -> UInt64? {
         do {
-            OWSFileSystem.ensureDirectoryExists(AttachmentStream.attachmentsDirectory().path)
-            return try OWSFileSystem.freeSpaceInBytes(
-                forPath: AttachmentStream.attachmentsDirectory(),
-            )
+            return try OWSFileSystem.freeSpaceInBytes()
         } catch {
             owsFailDebug("Unable to determine disk space \(error)")
             return nil

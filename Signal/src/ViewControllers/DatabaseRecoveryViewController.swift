@@ -618,7 +618,7 @@ class DatabaseRecoveryViewController<SetupResult>: OWSViewController {
     /// - Returns: `true` if the user has approximately enough disk space, or if any part of the check fails. `false` if they do not have enough disk space.
     private func hasApproximatelyEnoughDiskSpace() -> Bool {
         do {
-            let freeSpace = try OWSFileSystem.freeSpaceInBytes(forPath: self.corruptDatabaseStorage.databaseFileUrl)
+            let freeSpace = try OWSFileSystem.freeSpaceInBytes()
             return freeSpace >= currentDatabaseSize
         } catch {
             owsFailDebug("\(error)")

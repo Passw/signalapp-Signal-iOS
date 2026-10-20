@@ -111,12 +111,9 @@ public final class LowDiskSpaceManager {
 
     /// Fetches the device's total capacity and remaining space and logs them.
     private static func checkDiskSpace() -> DiskSpace? {
-        // Check the volume that holds the database, matching the on-launch check
-        // in `AppDelegate.checkEnoughDiskSpaceAvailable()`.
-        let path = SDSDatabaseStorage.grdbDatabaseFileUrl
         do {
-            let totalBytes = try OWSFileSystem.totalSpaceInBytes(forPath: path)
-            let availableBytes = try OWSFileSystem.freeSpaceInBytes(forPath: path)
+            let totalBytes = try OWSFileSystem.totalSpaceInBytes()
+            let availableBytes = try OWSFileSystem.freeSpaceInBytes()
 
             return DiskSpace(
                 total: totalBytes,
