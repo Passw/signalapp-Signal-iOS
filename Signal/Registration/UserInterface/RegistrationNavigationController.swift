@@ -810,9 +810,15 @@ extension RegistrationNavigationController: RegistrationSignalLoginSplashPresent
         pushNextStepController()
     }
 
-    func purchaseSignalLogin() {
-        coordinator.purchaseSignalLogin()
-        pushNextStepController()
+    func submitLoginSelection(_ selection: RegistrationSignalLoginSelection) {
+        switch selection {
+        case .existingLogin:
+            // TODO
+            break
+        case .purchaseLogin:
+            coordinator.purchaseSignalLogin()
+            pushNextStepController()
+        }
     }
 }
 
