@@ -158,7 +158,7 @@ class StoryManagerTest: SSKBaseTest {
             SSKEnvironment.shared.blockingManagerRef.addBlockedGroup(
                 &groupRecord,
                 blockedAt: .now(),
-                blockMode: .localUser,
+                blockMode: .storageService,
                 tx: $0,
             )
 
