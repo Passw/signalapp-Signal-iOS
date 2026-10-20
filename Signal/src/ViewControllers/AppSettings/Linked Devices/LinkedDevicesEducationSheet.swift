@@ -51,38 +51,30 @@ class LinkedDevicesEducationSheet: StackSheetViewController {
         )
         stackView.addArrangedSubview(messagesBulletPoint)
 
-        let iPadDownloadLinkString = "signal.org/install"
-        let iPadDownloadURL = URL(string: "https://signal.org/install/")!
-        let desktopDownloadLinkString = "signal.org/download"
-        let desktopDownloadURL = URL(string: "https://signal.org/download/")!
+        let downloadLinkString = "signal.org/download"
+        let downloadURL = URL(string: "https://signal.org/download/")!
 
-        let downloadsString = String.nonPluralLocalizedStringWithFormat(
+        let downloadString = String.nonPluralLocalizedStringWithFormat(
             OWSLocalizedString(
                 "LINKED_DEVICES_EDUCATION_POINT_DOWNLOADS",
-                comment: "Bullet point about downloads on the linked devices education sheet. Embeds {{ %1$@ iPad download link, %2$@ desktop download link }}",
+                comment: "Bullet point about a download link on the linked devices education sheet. Embeds {{ %1$@ download link }}",
             ),
-            iPadDownloadLinkString,
-            desktopDownloadLinkString,
+            downloadLinkString,
         )
 
-        let downloadsAttributedString = NSMutableAttributedString(string: downloadsString)
+        let downloadAttributedString = NSMutableAttributedString(string: downloadString)
 
-        downloadsAttributedString.addAttributes(
-            [.link: iPadDownloadURL],
-            range: (downloadsString as NSString).range(of: iPadDownloadLinkString),
+        downloadAttributedString.addAttributes(
+            [.link: downloadURL],
+            range: (downloadString as NSString).range(of: downloadLinkString),
         )
 
-        downloadsAttributedString.addAttributes(
-            [.link: desktopDownloadURL],
-            range: (downloadsString as NSString).range(of: desktopDownloadLinkString),
-        )
-
-        let downloadsBulletPoint = Self.bulletPoint(
+        let downloadBulletPoint = Self.bulletPoint(
             icon: "save",
-            text: downloadsAttributedString,
+            text: downloadAttributedString,
         )
 
-        stackView.addArrangedSubview(downloadsBulletPoint)
+        stackView.addArrangedSubview(downloadBulletPoint)
     }
 
     private static func bulletPoint(icon: String, text: String) -> UIView {
