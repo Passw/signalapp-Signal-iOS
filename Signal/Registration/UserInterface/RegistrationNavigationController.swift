@@ -11,6 +11,7 @@ public class RegistrationNavigationController: OWSNavigationController {
 
     private let coordinator: RegistrationCoordinator
     private var logger: PrefixedLogger { coordinator.logger }
+    private var userActionLogger: PrefixedLogger { coordinator.logger.prefixedWith(with: "[Action]") }
 
     public static func withCoordinator(_ coordinator: RegistrationCoordinator) -> RegistrationNavigationController {
         let vc = RegistrationNavigationController(coordinator: coordinator)
@@ -82,7 +83,7 @@ public class RegistrationNavigationController: OWSNavigationController {
                 }
             }
         } else {
-            logger.info("Skipping loading controller for \(String(describing: try? step.result?.get().logSafeString))")
+            logger.info("Skipping loading controller for \(String(describing: try? step.result?.get()))")
             _pushNextController(step)
         }
     }
@@ -106,11 +107,11 @@ public class RegistrationNavigationController: OWSNavigationController {
                 await progressModal.completeAndDismiss()
             }
 
-            logger.info("Pushing registration step: \(step.logSafeString)")
+            logger.info("Pushing registration step: \(step)")
 
             self.isLoading = false
             guard let controller = self.controller(for: step) else {
-                logger.info("No controller for \(step.logSafeString)")
+                logger.info("No controller for \(step)")
                 return
             }
             var controllerToPush: UIViewController?
@@ -118,10 +119,10 @@ public class RegistrationNavigationController: OWSNavigationController {
                 // If we already have this controller available, update it and pop to it.
                 if type(of: viewController) == controller.viewType {
                     if let newController = controller.updateViewController(viewController) {
-                        logger.info("Pushing new version of existing controller for \(step.logSafeString)")
+                        logger.info("Pushing new version of existing controller for \(step)")
                         controllerToPush = newController
                     } else {
-                        logger.info("Popping to existing controller for \(step.logSafeString)")
+                        logger.info("Popping to existing controller for \(step)")
                         let animatePop = !(self.topViewController is RegistrationLoadingViewController)
                         self.popToViewController(viewController, animated: animatePop)
                         return
@@ -137,14 +138,14 @@ public class RegistrationNavigationController: OWSNavigationController {
                 !self.viewControllers.contains(where: { $0 is RegistrationSplashViewController })
             {
                 // Cancellable controllers need to have a splash view behind
-                logger.info("Pushing splash view and controller for \(step.logSafeString)")
+                logger.info("Pushing splash view and controller for \(step)")
                 let splashController = self.registrationSplashController()
                 let newViewControllers = [splashController.makeViewController(self), vc]
                 self.setViewControllers(self.viewControllers + newViewControllers, animated: true)
                 return
             }
 
-            logger.info("Pushing controller for \(step.logSafeString)")
+            logger.info("Pushing controller for \(step)")
             self.pushViewController(vc, animated: true)
         }
     }
@@ -578,20 +579,22 @@ extension RegistrationNavigationController: RegistrationPermissionsPresenter {
 extension RegistrationNavigationController: RegistrationPhoneNumberPresenter {
 
     func goToNextStep(withE164 e164: E164) {
+        userActionLogger.info("Submitted phone number")
         coordinator.submitE164(e164)
         pushNextStepController(loadingMode: .submittingPhoneNumber(e164: e164.stringValue))
     }
 
     func switchToDeviceLinking() {
+        userActionLogger.info("Chose to link as secondary device")
         beginSecondaryDeviceLinking(startingAtQRCode: true)
     }
 
     func exitRegistration() {
+        userActionLogger.info("Exited registration")
         guard coordinator.exitRegistration() else {
             owsFailBeta("Unable to exit registration")
             return
         }
-        logger.info("Early exiting registration")
         SignalApp.shared.showConversationSplitView()
     }
 
@@ -603,6 +606,7 @@ extension RegistrationNavigationController: RegistrationPhoneNumberPresenter {
 
 extension RegistrationNavigationController: RegistrationChangePhoneNumberPresenter {
     func submitProspectiveChangeNumberE164(newE164: E164) {
+        userActionLogger.info("Submitted prospective change-number number")
         coordinator.submitProspectiveChangeNumberE164(newE164)
         pushNextStepController(loadingMode: .submittingPhoneNumber(e164: newE164.stringValue))
     }
@@ -611,6 +615,7 @@ extension RegistrationNavigationController: RegistrationChangePhoneNumberPresent
 extension RegistrationNavigationController: RegistrationChangePhoneNumberConfirmationPresenter {
 
     func confirmChangeNumber(newE164: E164) {
+        userActionLogger.info("Confirmed new phone number")
         coordinator.submitE164(newE164)
         pushNextStepController(loadingMode: .submittingPhoneNumber(e164: newE164.stringValue))
     }
@@ -619,6 +624,7 @@ extension RegistrationNavigationController: RegistrationChangePhoneNumberConfirm
 extension RegistrationNavigationController: RegistrationCaptchaPresenter {
 
     func submitCaptcha(_ token: String) {
+        userActionLogger.info("Submitted captcha")
         pushNextController(coordinator.submitCaptcha(token))
     }
 }
@@ -626,21 +632,25 @@ extension RegistrationNavigationController: RegistrationCaptchaPresenter {
 extension RegistrationNavigationController: RegistrationVerificationPresenter {
 
     func returnToPhoneNumberEntry() {
+        userActionLogger.info("Went back to change phone number")
         coordinator.requestChangeE164()
         pushNextStepController()
     }
 
     func requestSMSCode() {
+        userActionLogger.info("Asked for SMS code")
         coordinator.requestSMSCode()
         pushNextStepController()
     }
 
     func requestVoiceCode() {
+        userActionLogger.info("Asked for voice code")
         coordinator.requestVoiceCode()
         pushNextStepController()
     }
 
     func submitVerificationCode(_ code: String) {
+        userActionLogger.info("Submitted verification code")
         pushNextController(coordinator.submitVerificationCode(code), loadingMode: .submittingVerificationCode)
     }
 }
@@ -648,25 +658,30 @@ extension RegistrationNavigationController: RegistrationVerificationPresenter {
 extension RegistrationNavigationController: RegistrationPinPresenter {
 
     func cancelPinConfirmation() {
+        userActionLogger.info("Cancelled confirming new PIN")
         coordinator.resetUnconfirmedPINCode()
         pushNextStepController()
     }
 
     func askUserToConfirmPin(_ blob: RegistrationPinConfirmationBlob) {
+        userActionLogger.info("Entered a new PIN, now confirm")
         coordinator.setPINCodeForConfirmation(blob)
         pushNextStepController()
     }
 
     func submitPinCode(_ code: String) {
+        userActionLogger.info("Submitted PIN")
         pushNextController(coordinator.submitPINCode(code))
     }
 
     func submitWithSkippedPin() {
+        userActionLogger.info("Skipped PIN entry")
         coordinator.skipPINCode()
         pushNextStepController()
     }
 
     func submitWithCreateNewPinInstead() {
+        userActionLogger.info("Chose to create a new PIN instead of entering")
         coordinator.skipAndCreateNewPINCode()
         pushNextStepController()
     }
@@ -674,6 +689,7 @@ extension RegistrationNavigationController: RegistrationPinPresenter {
 
 extension RegistrationNavigationController: RegistrationPinAttemptsExhaustedAndMustCreateNewPinPresenter {
     func acknowledgePinGuessesExhausted() {
+        userActionLogger.info("Acknowledged running out of PIN guesses")
         pushNextStepController()
     }
 }
@@ -685,6 +701,7 @@ extension RegistrationNavigationController: RegistrationProfilePresenter {
         avatarData: Data?,
         phoneNumberDiscoverability: PhoneNumberDiscoverability?,
     ) {
+        userActionLogger.info("Submitted profile")
         coordinator.setProfileInfo(
             givenName: givenName,
             familyName: familyName,
@@ -700,6 +717,7 @@ extension RegistrationNavigationController: RegistrationPhoneNumberDiscoverabili
     var presentedAsModal: Bool { return false }
 
     func setPhoneNumberDiscoverability(_ phoneNumberDiscoverability: PhoneNumberDiscoverability) {
+        userActionLogger.info("Set phone number discoverability")
         coordinator.setPhoneNumberDiscoverability(phoneNumberDiscoverability)
         pushNextStepController()
     }
@@ -708,6 +726,7 @@ extension RegistrationNavigationController: RegistrationPhoneNumberDiscoverabili
 extension RegistrationNavigationController: RegistrationReglockTimeoutPresenter {
 
     func acknowledgeReglockTimeout() {
+        userActionLogger.info("Acknowledged reglock timeout")
         switch coordinator.acknowledgeReglockTimeout() {
         case .cannotExit:
             logger.warn("Tried to exit registration from reglock timeout when unable.")
@@ -723,16 +742,19 @@ extension RegistrationNavigationController: RegistrationReglockTimeoutPresenter 
 
 extension RegistrationNavigationController: RegistrationEnterAccountEntropyPoolPresenter {
     func next(accountEntropyPool: SignalServiceKit.AccountEntropyPool) {
+        userActionLogger.info("Submitted recovery key")
         coordinator.updateAccountEntropyPool(accountEntropyPool)
         pushNextStepController()
     }
 
     func cancelKeyEntry() {
+        userActionLogger.info("Backed out of recovery key entry")
         coordinator.cancelRecoveryKeyEntry()
         pushNextStepController()
     }
 
     func forgotKeyAction() {
+        userActionLogger.info("Missing recovery key")
         coordinator.updateRestoreMethod(method: .declined)
         pushNextStepController()
     }
@@ -740,11 +762,13 @@ extension RegistrationNavigationController: RegistrationEnterAccountEntropyPoolP
 
 extension RegistrationNavigationController: RegistrationChooseRestoreMethodPresenter {
     func didChooseRestoreMethod(method: RegistrationRestoreMethod) {
+        userActionLogger.info("Picked restore method \(method)")
         coordinator.updateRestoreMethod(method: method)
         pushNextStepController()
     }
 
     func didCancelRestoreMethodSelection() {
+        userActionLogger.info("Backed out of picking a restore method")
         coordinator.resetRestoreMode()
         pushNextStepController()
     }
@@ -752,11 +776,13 @@ extension RegistrationNavigationController: RegistrationChooseRestoreMethodPrese
 
 extension RegistrationNavigationController: RegistrationQuickRestoreQRCodePresenter {
     func didReceiveRegistrationMessage(_ message: SignalServiceKit.RegistrationProvisioningMessage) {
+        userActionLogger.info("Scanned the QR code on their old device")
         coordinator.restoreFromRegistrationMessage(message: message)
         pushNextStepController()
     }
 
     func cancelChosenRestoreMethod() {
+        userActionLogger.info("Backed out of scanning the QR code")
         coordinator.resetRestoreMode()
         pushNextStepController()
     }
@@ -764,11 +790,13 @@ extension RegistrationNavigationController: RegistrationQuickRestoreQRCodePresen
 
 extension RegistrationNavigationController: RegistrationTransferStatusPresenter {
     func cancelTransfer() {
+        userActionLogger.info("Cancelled the device transfer")
         coordinator.resetRestoreMode()
         pushNextStepController()
     }
 
     func transferFailed(error: Error) {
+        logger.warn("Device transfer failed: \(type(of: error))")
         coordinator.resetRestoreMode()
         pushNextStepController()
     }
@@ -776,16 +804,19 @@ extension RegistrationNavigationController: RegistrationTransferStatusPresenter 
 
 extension RegistrationNavigationController: RegistrationRestoreFromBackupConfirmationPresenter {
     func skipRestoreFromBackup() {
+        userActionLogger.info("Skipped restoring from a backup")
         coordinator.updateRestoreMethod(method: .declined)
         pushNextStepController()
     }
 
     func cancelRestoreFromBackup() {
+        userActionLogger.info("Backed out of confirming the backup restore")
         coordinator.resetRestoreMethodChoice()
         pushNextStepController()
     }
 
     func restoreFromBackupConfirmed(_ backup: RegistrationRestoreFromBackupConfirmationState.AvailableBackup) {
+        userActionLogger.info("Confirmed restoring from a backup")
         Task { @MainActor in
             let progressModal = BackupRestoreProgressModal(style: .backupRestore)
             let (progress, stream) = OWSSequentialProgress<BackupRestoreProgressPhase>.createSink()

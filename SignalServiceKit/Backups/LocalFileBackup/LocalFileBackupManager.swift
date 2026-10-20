@@ -6,12 +6,22 @@
 public import LibSignalClient
 
 public enum LocalFileBackupError: Error {
-    public enum AccessFailureReason {
+    public enum AccessFailureReason: CustomStringConvertible {
         case stale
         case missing
         case noAccess
         case failedToResolveBookmark(Error)
         case trashed
+
+        public var description: String {
+            switch self {
+            case .stale: return "stale"
+            case .missing: return "missing"
+            case .noAccess: return "noAccess"
+            case .failedToResolveBookmark: return "failedToResolveBookmark"
+            case .trashed: return "trashed"
+            }
+        }
     }
 
     case unableToAccessLocalFile(AccessFailureReason)

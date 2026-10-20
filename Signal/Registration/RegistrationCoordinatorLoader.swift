@@ -31,7 +31,7 @@ public protocol RegistrationCoordinatorLoader {
 
 public class RegistrationCoordinatorLoaderImpl: RegistrationCoordinatorLoader {
 
-    public enum Mode: Codable {
+    public enum Mode: Codable, CustomStringConvertible {
         case registering(RegisteringState)
         case reRegistering(ReregisteringLocalIdentifiers)
         case changingNumber(ChangeNumberState)
@@ -77,6 +77,14 @@ public class RegistrationCoordinatorLoaderImpl: RegistrationCoordinatorLoader {
                 return false
             case .changingNumber(let state):
                 return state.pniState != nil
+            }
+        }
+
+        public var description: String {
+            switch self {
+            case .registering: return "registering"
+            case .reRegistering: return "reRegistering"
+            case .changingNumber: return "changingNumber"
             }
         }
     }

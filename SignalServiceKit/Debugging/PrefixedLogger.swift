@@ -22,6 +22,13 @@ open class PrefixedLogger {
         self.suffix = suffix.map { " \($0)" } ?? ""
     }
 
+    public func prefixedWith(with extraPrefix: String) -> PrefixedLogger {
+        return PrefixedLogger(
+            prefix: prefix + "\(extraPrefix)",
+            suffix: suffix,
+        )
+    }
+
     public func suffixed(with extraSuffix: String) -> PrefixedLogger {
         return PrefixedLogger(
             prefix: prefix,

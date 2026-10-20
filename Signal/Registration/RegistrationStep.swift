@@ -6,7 +6,7 @@
 import Foundation
 public import SignalServiceKit
 
-public enum RegistrationStep: Equatable {
+public enum RegistrationStep: Equatable, CustomStringConvertible {
 
     // MARK: - Opening Steps
 
@@ -82,6 +82,16 @@ public enum RegistrationStep: Equatable {
         case manualRestore
         /// Transfer from device, restore backup, prominent skip button
         case unspecified
+
+        public var logSafeString: String {
+            switch self {
+            case .quickRestore(let tier, let platform):
+                let tierString = tier.map { "\($0)" } ?? "unknownTier"
+                return "quickRestore(\(tierString), \(platform))"
+            case .manualRestore: return "manualRestore"
+            case .unspecified: return "unspecified"
+            }
+        }
     }
 
     /// Prompt the user to choose from the available restore methods
@@ -134,6 +144,18 @@ public enum RegistrationStep: Equatable {
 
         /// A generic error occurred. Prefer to use other error types.
         case genericError
+
+        public var logSafeString: String {
+            switch self {
+            case .sessionCanNeverRequestVerificationCode: return "sessionCanNeverRequestVerificationCode"
+            case .sessionInvalidated: return "sessionInvalidated"
+            case .verificationCodeSubmissionUnavailable: return "verificationCodeSubmissionUnavailable"
+            case .submittingVerificationCodeBeforeAnyCodeSent: return "submittingVerificationCodeBeforeAnyCodeSent"
+            case .becameDeregistered: return "becameDeregistered"
+            case .networkError: return "networkError"
+            case .genericError: return "genericError"
+            }
+        }
     }
 
     /// Special cases; should display an error on the current screen, whatever it is.
@@ -153,7 +175,7 @@ public enum RegistrationStep: Equatable {
 
     // MARK: - Logging
 
-    public var logSafeString: String {
+    public var description: String {
         switch self {
         case .registrationSplash: return "registrationSplash"
         case .changeNumberSplash: return "changeNumberSplash"
@@ -164,16 +186,16 @@ public enum RegistrationStep: Equatable {
         case .verificationCodeEntry: return "verificationCodeEntry"
         case .deviceTransfer: return "deviceTransfer"
         case .promptForLogin: return "promptForLogin"
-        case .pinEntry: return "pinEntry"
+        case .pinEntry(let pinState): return "pinEntry(\(pinState.operation.logSafeString))"
         case .pinAttemptsExhaustedWithoutReglock: return "pinAttemptsExhaustedWithoutReglock"
         case .captchaChallenge: return "captchaChallenge"
         case .reglockTimeout: return "reglockTimeout"
         case .enterRecoveryKey: return "enterRecoveryKey"
-        case .chooseRestoreMethod: return "chooseRestoreMethod"
+        case .chooseRestoreMethod(let restorePath): return "chooseRestoreMethod(\(restorePath.logSafeString))"
         case .confirmRestoreFromBackup: return "confirmRestoreFromBackup"
         case .phoneNumberDiscoverability: return "phoneNumberDiscoverability"
         case .setupProfile: return "setupProfile"
-        case .showErrorSheet: return "showErrorSheet"
+        case .showErrorSheet(let errorSheet): return "showErrorSheet(\(errorSheet.logSafeString))"
         case .appUpdateBanner: return "appUpdateBanner"
         case .done: return "done"
         }

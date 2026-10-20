@@ -61,6 +61,16 @@ public struct RegistrationPinState: Equatable {
             /// The number of PIN attempts that the user has. If `nil`, the count is unknown.
             remainingAttempts: UInt?,
         )
+
+        public var logSafeString: String {
+            switch self {
+            case .creatingNewPin: return "creatingNewPin"
+            case .confirmingNewPin: return "confirmingNewPin"
+            case .enteringExistingPin(let skippability, let remainingAttempts):
+                let attemptsString = remainingAttempts.map { "\($0)" } ?? "unknown"
+                return "enteringExistingPin(\(skippability), remainingAttempts: \(attemptsString))"
+            }
+        }
     }
 
     let operation: RegistrationPinOperation

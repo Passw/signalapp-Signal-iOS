@@ -40,27 +40,26 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
     // MARK: - Public API
 
     public func switchToSecondaryDeviceLinking() -> Bool {
-        logger.info("")
-
         switch mode {
         case .registering:
+            logger.info("User switched to secondary device linking")
             self.db.write { tx in
                 self.wipePersistedState(tx)
             }
             return true
         case .reRegistering, .changingNumber:
+            logger.warn("User can't switch to secondary device linking while \(mode)")
             return false
         }
     }
 
     public func exitRegistration() -> Bool {
-        logger.info("")
-
         switch canExitRegistrationFlow() {
         case .notAllowed:
             logger.warn("User can't exit registration now")
             return false
         case .allowed(let shouldWipeState):
+            logger.info("User exited registration; wiping state: \(shouldWipeState)")
             if shouldWipeState {
                 // Wipe in progress state; presumably the user decided not
                 // to proceed and should
@@ -90,18 +89,24 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             return .success
         }
         let retryAfterTimeout = waitingPeriodInSeconds - timeSinceRegistration
+        logger.info("User can't change number yet; \(retryAfterTimeout)s remaining")
         return .retryAfter(retryAfterTimeout)
     }
 
     @MainActor
     public func nextStep() async -> RegistrationStep {
         if deps.appExpiry.isExpired(now: deps.dateProvider()) {
-            return .appUpdateBanner
+            return logStep(.appUpdateBanner)
         }
 
         // Always start by restoring state.
         await restoreStateIfNeeded()
-        return await nextStep(pathway: getPathway())
+        return logStep(await nextStep(pathway: getPathway()))
+    }
+
+    private func logStep(_ step: RegistrationStep) -> RegistrationStep {
+        logger.info("[Step] \(step)")
+        return step
     }
 
     @MainActor
@@ -296,6 +301,8 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
     /// backup and choose device transfer instead).
     @MainActor
     public func updateRestoreMethod(method: RegistrationRestoreMethod) {
+        logger.info("User chose restore method: \(method)")
+
         switch method {
         case .declined:
             inMemoryState.hasSkippedRestoreFromMessageBackup = true
@@ -339,6 +346,8 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
     @MainActor
     public func updateAccountEntropyPool(_ accountEntropyPool: SignalServiceKit.AccountEntropyPool) {
+        logger.info("User provided a recovery key [\(accountEntropyPool.getLoggingKey())]")
+
         inMemoryState.accountEntropyPool = accountEntropyPool
         inMemoryState.shouldRestoreSVRMasterKeyAfterRegistration = false
         inMemoryState.askForPinDuringReregistration = false
@@ -361,6 +370,14 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
     @MainActor
     public func restoreFromRegistrationMessage(message: RegistrationProvisioningMessage) {
+        logger.info(
+            "Received registration message from old device."
+                + " platform: \(message.platform),"
+                + " tier: \(message.tier.map { "\($0)" } ?? "none"),"
+                + " hasPin: \(message.pin != nil),"
+                + " capabilities: \(message.capabilites.map(\.rawValue))",
+        )
+
         inMemoryState.accountEntropyPool = message.accountEntropyPool
         inMemoryState.registrationMessage = message
         inMemoryState.pinFromUser = message.pin
@@ -399,6 +416,8 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
     @MainActor
     public func setHasOldDevice(_ hasOldDevice: Bool) {
+        logger.info("User reported having their old device: \(hasOldDevice)")
+
         deps.db.write { tx in
             updatePersistedState(tx) {
                 $0.hasShownSplash = true
@@ -450,12 +469,12 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                     inMemoryState.pinFromUser = nil
                     inMemoryState.pinFromDisk = nil
                     self.wipeInMemoryStateToPreventSVRPathAttempts()
-                    return .value(.pinAttemptsExhaustedWithoutReglock(
+                    return .value(logStep(.pinAttemptsExhaustedWithoutReglock(
                         .init(mode: .restoringRegistrationRecoveryPassword),
-                    ))
+                    )))
                 } else {
                     let remainingAttempts = Constants.maxLocalPINGuesses - numberOfWrongGuesses
-                    return .value(.pinEntry(RegistrationPinState(
+                    return .value(logStep(.pinEntry(RegistrationPinState(
                         operation: .enteringExistingPin(
                             skippability: .canSkip,
                             remainingAttempts: remainingAttempts,
@@ -463,7 +482,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                         error: .wrongPin(wrongPin: code),
                         contactSupportMode: contactSupportRegistrationPINMode(),
                         exitConfiguration: pinCodeEntryExitConfiguration(),
-                    )))
+                    ))))
                 }
             }
         case .opening, .quickRestore, .manualRestore, .svrAuthCredential, .svrAuthCredentialCandidates, .signalLogin, .profileSetup, .session:
@@ -552,6 +571,8 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
     @MainActor
     public func resetRestoreMode() {
+        logger.info("User reset their restore mode")
+
         inMemoryState.registrationMessage = nil
         inMemoryState.accountEntropyPool = nil
         inMemoryState.askForPinDuringReregistration = true
@@ -567,12 +588,16 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
     @MainActor
     public func cancelRecoveryKeyEntry() {
+        logger.info("User cancelled recovery key entry")
+
         inMemoryState.accountEntropyPool = nil
         resetRestoreMethodChoice()
     }
 
     @MainActor
     public func resetRestoreMethodChoice() {
+        logger.info("User reset their restore method choice")
+
         inMemoryState.needsToAskForDeviceTransfer = true
         inMemoryState.restoreFromBackupProgressSink = nil
         deps.db.write { tx in
@@ -591,9 +616,10 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         inMemoryState.restoreFromBackupProgressSink = progress
         switch selectedBackup {
         case .local(let date):
+            logger.info("User confirmed restoring from a local backup")
             inMemoryState.selectedLocalBackupDate = date
-        case .remote:
-            break
+        case .remote(_, _, let tier):
+            logger.info("User confirmed restoring from a remote backup. tier: \(tier)")
         }
     }
 
@@ -603,7 +629,8 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         identity: AccountIdentity,
         progress: OWSSequentialProgressRootSink<BackupRestoreProgressPhase>?,
     ) async {
-        logger.info("")
+        logger.info("Restoring from a \(type) message backup [\(accountEntropyPool.getLoggingKey())]")
+
         return await _doBackupRestoreStep {
             let downloadProgress = progress?.child(for: .downloadingBackup).addChild(
                 withLabel: "",
@@ -666,8 +693,14 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                         LocalFileBackupManager.FileStructure.date(fromBackupDirectoryName: $0.lastPathComponent) == selectedDate
                     })
                 {
+                    self.logger.info("Found the local backup the user selected of \(backupDirectories.count) on disk")
                     chosenBackup = match
                 } else {
+                    // Either nothing was selected, or what was selected is gone.
+                    self.logger.info(
+                        "Falling back to the newest of \(backupDirectories.count) local backups."
+                            + " hadSelection: \(self.inMemoryState.selectedLocalBackupDate != nil)",
+                    )
                     chosenBackup = backupDirectories[0]
                 }
 
@@ -781,7 +814,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
     private func finalizeRestoreFromMessageBackup(
         identity: AccountIdentity,
     ) async {
-        logger.info("")
+        logger.info("Finalizing the backup import")
         return await _doBackupRestoreStep {
             try await self.deps.backupArchiveManager.finalizeBackupImport(progress: nil)
         }
@@ -806,10 +839,13 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             }
         } catch {
             let errorType = self.deps.registrationBackupErrorPresenter.mapToRegistrationError(error: error)
+            logger.error("Backup restore failed: \(errorType) (\(error))")
+
             let result = await self.deps.registrationBackupErrorPresenter.presentError(
                 error: errorType,
                 isQuickRestore: false,
             )
+            logger.info("User chose \(result.map { "\($0)" } ?? "nothing") after the backup restore failed")
 
             switch result {
             case .restartQuickRestore, .none:
@@ -821,6 +857,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 return
             case .incorrectRecoveryKey, .skipRestore:
                 // By this point, it's really too late to do anything but skip the backup and continue
+                logger.warn("Giving up on the backup restore; continuing without it")
                 await db.awaitableWrite { tx in
                     updatePersistedState(tx) {
                         $0.restoreMethod = .declined
@@ -830,6 +867,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 return
             case .tryAgain:
                 // retry the backup restore
+                logger.info("Retrying the backup restore")
                 return await _doBackupRestoreStep(block)
             }
         }
@@ -837,7 +875,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
     @MainActor
     public func setPhoneNumberDiscoverability(_ phoneNumberDiscoverability: PhoneNumberDiscoverability) {
-        logger.info("")
+        logger.info("User chose phone number discoverability: \(phoneNumberDiscoverability)")
 
         let accountIdentity = persistedState.accountIdentity.owsFailUnwrap("must exist")
 
@@ -854,7 +892,13 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         avatarData: Data?,
         phoneNumberDiscoverability: PhoneNumberDiscoverability?,
     ) {
-        logger.info("")
+        // Deliberately logs only the shape of the profile, not its contents.
+        logger.info(
+            "User set their profile info."
+                + " hasFamilyName: \(familyName != nil),"
+                + " hasAvatar: \(avatarData != nil),"
+                + " discoverability: \(phoneNumberDiscoverability.map { $0.isDiscoverable ? "on" : "off" } ?? "none")",
+        )
 
         let accountIdentity = persistedState.accountIdentity.owsFailUnwrap("must exist")
 
@@ -869,21 +913,22 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
     }
 
     public func acknowledgeReglockTimeout() -> AcknowledgeReglockResult {
-        logger.info("")
-
         switch reglockTimeoutAcknowledgeAction {
         case .resetPhoneNumber:
+            logger.info("Acknowledged reglock timeout; restarting registration")
             db.write { transaction in
                 self.resetSession(transaction)
                 self.updatePersistedState(transaction) { $0.e164 = nil }
             }
             return .restartRegistration(Guarantee.wrapAsync { await self.nextStep() })
         case .close:
+            logger.info("Acknowledged reglock timeout; exiting registration")
             guard exitRegistration() else {
                 return .cannotExit
             }
             return .exitRegistration
         case .none:
+            logger.warn("Acknowledged reglock timeout, but there's nowhere to go")
             return .cannotExit
         }
     }
@@ -1802,7 +1847,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
     /// of registration to make this class a little more modular. Different pathways
     /// still share state and interact with each other in subtle ways, but for the most
     /// part are independent sequences.
-    private enum Pathway {
+    private enum Pathway: CustomStringConvertible {
         /// The first few screens before we try and register.
         /// (basically, the splash and systems permissions screens)
         case opening
@@ -1834,7 +1879,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         /// setting up a PIN, etc.
         case profileSetup(AccountIdentity)
 
-        var logSafeString: String {
+        var description: String {
             switch self {
             case .opening: return "opening"
             case .quickRestore: return "quickRestore"
@@ -1948,7 +1993,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
     @MainActor
     private func nextStep(pathway: Pathway) async -> RegistrationStep {
-        logger.info("Going to next step for \(pathway.logSafeString) pathway")
+        logger.info("Going to next step for \(pathway) pathway")
 
         switch pathway {
         case .opening:
@@ -2623,6 +2668,10 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         case let .reglocked(svrAuthCredential, reglockExpirationDate):
             guard let svrAuthCredential = svrAuthCredential.svr2 else {
                 // If we don't have a useable credential, we are stuck.
+                logger.warn(
+                    "Reglocked with no usable SVR2 credential; waiting out the lock."
+                        + " expiresIn: \(Int(reglockExpirationDate.timeIntervalSince(deps.dateProvider())))s",
+                )
                 db.write { tx in
                     self.updatePersistedSessionState(session: session, tx) {
                         $0.reglockState = .waitingTimeout(expirationDate: reglockExpirationDate)
@@ -2633,6 +2682,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
             // If the user has already supplied an AEP, this should be possible to use
             if let aep = inMemoryState.accountEntropyPool {
+                logger.info("Reglocked; deriving the reglock token from the recovery key the user gave us")
                 self.db.write { tx in
                     let masterKey = aep.getMasterKey()
                     self.updatePersistedState(tx) {
@@ -2647,6 +2697,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 return await nextStep()
             } else if let pinFromUser = inMemoryState.pinFromUser {
                 // Otherwise, if the user has a PIN, restore the master key from SVR
+                logger.info("Reglocked; restoring the master key from SVR with the user's PIN")
                 return await restoreSVRMasterSecretForSessionPathReglock(
                     session: session,
                     pin: pinFromUser,
@@ -2656,6 +2707,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 )
             } else {
                 // And, if none of the above is true, go ahead and prompt for the users PIN
+                logger.info("Reglocked with neither a recovery key nor a PIN; asking for the PIN")
                 return .pinEntry(RegistrationPinState(
                     operation: .enteringExistingPin(
                         skippability: .unskippable,
@@ -2670,6 +2722,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             if deps.dateProvider() >= reglockExpirationDate {
                 // We've passed the time needed and reglock should be expired.
                 // Wipe our state and proceed.
+                logger.info("Reglock has expired; clearing it and continuing")
                 db.write { tx in
                     self.updatePersistedSessionState(session: session, tx) {
                         $0.reglockState = .none
@@ -2952,6 +3005,14 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             return await nextStep()
         case .reglockFailure(let reglockFailure):
             let reglockExpirationDate = self.deps.dateProvider().addingTimeInterval(TimeInterval(reglockFailure.timeRemainingMs / 1000))
+            logger.warn(
+                "Registration rejected by reglock."
+                    + " expiresIn: \(reglockFailure.timeRemainingMs / 1000)s,"
+                    + " sentReglockToken: \(reglockTokenUsedInRequest != nil),"
+                    + " haveRecoveryKey: \(inMemoryState.accountEntropyPool != nil),"
+                    + " hasGivenUpTryingToRestoreWithSVR: \(persistedState.hasGivenUpTryingToRestoreWithSVR)",
+            )
+
             guard
                 (
                     inMemoryState.accountEntropyPool != nil ||
@@ -2959,6 +3020,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 )
             else {
                 // If we haven't set an AEP, and have already exhausted our SVR backup attempts, we are stuck.
+                logger.warn("No recovery key left to try and SVR restore already given up on; waiting out the lock")
                 db.write { tx in
                     self.updatePersistedSessionState(session: sessionFromBeforeRequest, tx) {
                         $0.reglockState = .waitingTimeout(expirationDate: reglockExpirationDate)
@@ -2979,6 +3041,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                     let masterKey = inMemoryState.accountEntropyPool?.getMasterKey(),
                     reglockTokenUsedInRequest == masterKey.deriveRegistrationLock()
                 {
+                    logger.info("The recovery key we have is the one reglock rejected; asking for a different one")
                     return .enterRecoveryKey(RegistrationEnterAccountEntropyPoolState(
                         canShowBackButton: false,
                         canShowNoKeyHelpButton: false,
@@ -2987,6 +3050,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
                 // We were already trying reglock, and the token was wrong.
                 // that means the whole thing is stuck. wait out the reglock.
+                logger.warn("The reglock token we sent was wrong and we have no better one; waiting out the lock")
                 db.write { tx in
                     self.updatePersistedSessionState(session: sessionFromBeforeRequest, tx) {
                         $0.reglockState = .waitingTimeout(expirationDate: reglockExpirationDate)
@@ -2997,6 +3061,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 }
                 return await nextStep()
             } else {
+                logger.info("First reglock challenge; storing the SVR2 credential so we can try to get past it")
                 let persistedCredential = PersistedState.SessionState.ReglockState.SVRAuthCredential(
                     svr2: reglockFailure.svr2AuthCredential,
                 )
@@ -3629,7 +3694,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
     ) async -> RegistrationStep {
         let maxAutomaticRetries = Constants.networkErrorRetries
 
-        logger.info("")
+        logger.info("Restoring the master key from SVR to get past reglock")
 
         let result = await deps.svr.restoreKeys(
             pin: pin,
@@ -3638,6 +3703,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
 
         switch result {
         case .success(let masterKey):
+            logger.info("Restored the master key from SVR; retrying registration with a reglock token")
             self.db.write { tx in
                 self.updateMasterKeyAndLocalState(masterKey: masterKey, tx: tx)
                 self.updatePersistedState(tx) {
@@ -3651,6 +3717,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             }
             return await nextStep()
         case let .invalidPin(remainingAttempts):
+            logger.warn("Wrong PIN for the SVR restore; \(remainingAttempts) attempt(s) left")
             return .pinEntry(RegistrationPinState(
                 operation: .enteringExistingPin(
                     skippability: .unskippable,
@@ -3663,6 +3730,10 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         case .backupMissing:
             // If we are unable to talk to SVR, it got wiped, probably
             // because we used up our guesses. We can't get past reglock.
+            logger.warn(
+                "SVR backup is gone, so there's no way past reglock; waiting it out."
+                    + " expiresIn: \(Int(reglockExpirationDate.timeIntervalSince(deps.dateProvider()))))s",
+            )
             inMemoryState.pinFromUser = nil
             inMemoryState.shouldRestoreSVRMasterKeyAfterRegistration = false
             db.write { tx in
@@ -4233,10 +4304,12 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         logger.info("")
 
         guard let phoneNumber = accountIdentity.localIdentifiers.phoneNumber else {
+            logger.info("[SVR] Skip: no phone number")
             return nil
         }
 
         guard let pin = inMemoryState.pinFromUser ?? inMemoryState.pinFromDisk else {
+            logger.info("[SVR] Show PIN entry")
             return showPinEntryIfNeeded(accountIdentity: accountIdentity)
         }
 
@@ -4248,16 +4321,18 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                     accountEntropyPool: accountEntropyPool,
                 )
                 inMemoryState.hasMarkedPinEnabled = true
+                logger.info("[SVR] Mark PIN enabled")
                 return await nextStep()
             }
 
             if let phoneNumber = E164(phoneNumber), self.reglockToken(for: phoneNumber) != nil {
+                logger.info("[SVR] Mark RegLock enabled")
                 if !inMemoryState.hasSetReglock {
                     markRegistrationLockEnabled()
                     inMemoryState.hasSetReglock = true
                 }
             } else {
-                logger.info("Not enabling reglock because it wasn't enabled to begin with")
+                logger.info("[SVR] Not enabling reglock because it wasn't enabled to begin with")
             }
         }
         return nil

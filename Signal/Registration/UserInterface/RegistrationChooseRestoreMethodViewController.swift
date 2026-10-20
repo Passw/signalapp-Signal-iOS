@@ -12,11 +12,20 @@ protocol RegistrationChooseRestoreMethodPresenter: AnyObject {
     func didCancelRestoreMethodSelection()
 }
 
-public enum RegistrationRestoreMethod {
+public enum RegistrationRestoreMethod: CustomStringConvertible {
     case deviceTransfer
     case local(fileUrl: URL)
     case remote
     case declined
+
+    public var description: String {
+        switch self {
+        case .deviceTransfer: return "deviceTransfer"
+        case .local: return "local"
+        case .remote: return "remote"
+        case .declined: return "declined"
+        }
+    }
 }
 
 class RegistrationChooseRestoreMethodViewController: OWSViewController, UIDocumentPickerDelegate {
