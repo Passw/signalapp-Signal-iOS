@@ -58,7 +58,7 @@ public protocol RegistrationCoordinator {
     func exitSignalLogin()
 
     @MainActor
-    func purchaseSignalLogin()
+    func beginSignalLogin(useExisting: Bool)
 
     /// Submit an e164 to confirm for change number, returning the next step to take.
     /// If the e164 is rejected for any reason, the next step will be the same current step

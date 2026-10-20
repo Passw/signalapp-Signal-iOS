@@ -150,12 +150,12 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
     }
 
     @MainActor
-    public func purchaseSignalLogin() {
+    public func beginSignalLogin(useExisting: Bool) {
         logger.info("")
 
         deps.db.write { tx in
             updatePersistedState(tx) {
-                $0.signalLoginState = .purchase
+                $0.signalLoginState = useExisting ? .login : .purchase
             }
         }
     }
@@ -1255,6 +1255,8 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             /// back to `splash` if the user cancels the purchase. This state
             /// transitions to `redeemTransaction` if the purchase is successful.
             case purchase
+
+            case login
 
             /// We've successfully completed a purchase, and now we need to anonymously
             /// and durably redeem it for a receipt credential. This state transitions
@@ -3720,6 +3722,9 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 return .signalLoginSplash(RegistrationSignalLoginSplashState(
                     formattedPrice: product.displayPrice,
                 ))
+
+            case .login:
+                return .promptForLogin(RegistrationSignalLoginState(aci: nil, aep: nil))
 
             case .purchase:
                 let product: StoreKit.Product

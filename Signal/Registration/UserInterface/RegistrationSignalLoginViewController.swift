@@ -10,7 +10,8 @@ import SignalUI
 
 // MARK: - RegistrationCaptchaPresenter
 
-protocol RegistrationSignalLoginPresenter: RegistrationMethodPresenter {
+protocol RegistrationSignalLoginPresenter: AnyObject {
+    func exitSignalLogin()
     func submitLogin(
         aci: Aci,
         aep: SignalServiceKit.AccountEntropyPool,
@@ -64,7 +65,7 @@ class RegistrationSignalLoginViewController: OWSViewController {
         // X (cancel) --- "Next"
 
         navigationItem.leftBarButtonItem = .closeButton { [weak self] in
-            self?.presenter?.cancelChosenRestoreMethod()
+            self?.presenter?.exitSignalLogin()
         }
 
         navigationItem.rightBarButtonItem = .nextButton { [weak self] in
@@ -279,7 +280,7 @@ private class PreviewRegistrationEnterAccountPresenter: RegistrationSignalLoginP
         print("ACI: \(aci) \n AEP: \(aep)")
     }
 
-    func cancelChosenRestoreMethod() { }
+    func exitSignalLogin() { }
 }
 
 @available(iOS 17, *)

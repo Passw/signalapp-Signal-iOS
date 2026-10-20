@@ -813,10 +813,10 @@ extension RegistrationNavigationController: RegistrationSignalLoginSplashPresent
     func submitLoginSelection(_ selection: RegistrationSignalLoginSelection) {
         switch selection {
         case .existingLogin:
-            // TODO
-            break
+            coordinator.beginSignalLogin(useExisting: true)
+            pushNextStepController()
         case .purchaseLogin:
-            coordinator.purchaseSignalLogin()
+            coordinator.beginSignalLogin(useExisting: false)
             pushNextStepController()
         }
     }
