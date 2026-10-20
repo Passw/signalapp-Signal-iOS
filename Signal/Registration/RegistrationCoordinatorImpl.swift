@@ -2545,7 +2545,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         let response = await Service.makeSVR2AuthCheckRequest(
             e164: e164,
             candidateCredentials: svr2AuthCredentialCandidates,
-            signalService: deps.signalService,
+            networkManager: deps.networkManager,
             logger: logger,
         )
         return await self.handleSVR2AuthCredentialCheckResponse(
@@ -4784,7 +4784,6 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         }
 
         let shouldSkipDeviceTransfer = self.shouldSkipDeviceTransfer()
-        let signalService = self.deps.signalService
         let accountResponse = try await Service.makeCreateAccountRequest(
             verificationMethod,
             authPassword: authPassword,
@@ -4793,7 +4792,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             apnRegistrationId: apnRegistrationId,
             aciPreKeyBundle: aciPreKeyBundle,
             pniPreKeyBundle: pniPreKeyBundle,
-            signalService: signalService,
+            networkManager: deps.networkManager,
             logger: logger,
         )
         if case .success = accountResponse {

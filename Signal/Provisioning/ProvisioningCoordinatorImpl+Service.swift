@@ -26,7 +26,7 @@ extension ProvisioningCoordinatorImpl {
             authPassword: String,
             deviceAttributes: DeviceAttributes,
             apnRegistrationId: RegistrationRequestFactory.ApnRegistrationId?,
-            signalService: OWSSignalServiceProtocol,
+            networkManager: any NetworkManagerProtocol,
         ) async -> VerifySecondaryDeviceResponse {
             let request = ProvisioningRequestFactory.verifySecondaryDeviceRequest(
                 verificationCode: verificationCode,
@@ -39,7 +39,7 @@ extension ProvisioningCoordinatorImpl {
             )
 
             do {
-                let response = try await signalService.urlSessionForMainSignalService().performRequest(request)
+                let response = try await networkManager.asyncRequest(request)
                 return handleVerifySecondaryDeviceResponse(
                     statusCode: response.responseStatusCode,
                     bodyData: response.responseBodyData,

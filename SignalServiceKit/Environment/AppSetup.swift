@@ -1309,7 +1309,7 @@ extension AppSetup.GlobalsContinuation {
         let registrationSessionManager = RegistrationSessionManagerImpl(
             dateProvider: dateProvider,
             db: db,
-            signalService: signalService,
+            networkManager: networkManager,
         )
 
         let recipientHidingManager = RecipientHidingManagerImpl(

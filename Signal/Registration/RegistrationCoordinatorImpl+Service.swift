@@ -19,7 +19,7 @@ extension RegistrationCoordinatorImpl {
         static func makeSVR2AuthCheckRequest(
             e164: E164,
             candidateCredentials: [SVR2AuthCredential],
-            signalService: OWSSignalServiceProtocol,
+            networkManager: any NetworkManagerProtocol,
             logger: PrefixedLogger,
         ) async -> SVR2AuthCheckResponse {
             let request = RegistrationRequestFactory.svr2AuthCredentialCheckRequest(
@@ -28,7 +28,7 @@ extension RegistrationCoordinatorImpl {
                 logger: logger,
             )
             return await makeRequest(
-                { try await signalService.urlSessionForMainSignalService().performRequest(request) },
+                { try await networkManager.asyncRequest(request) },
                 handler: self.handleSVR2AuthCheckResponse(statusCode:retryAfterHeader:bodyData:logger:),
                 fallbackError: .genericError,
                 networkFailureError: .networkError,
@@ -71,7 +71,7 @@ extension RegistrationCoordinatorImpl {
             apnRegistrationId: RegistrationRequestFactory.ApnRegistrationId?,
             aciPreKeyBundle: RegistrationPreKeyUploadBundle,
             pniPreKeyBundle: RegistrationPreKeyUploadBundle?,
-            signalService: OWSSignalServiceProtocol,
+            networkManager: any NetworkManagerProtocol,
             logger: PrefixedLogger,
         ) async throws -> AccountResponse {
             let request = RegistrationRequestFactory.createAccountRequest(
@@ -86,7 +86,7 @@ extension RegistrationCoordinatorImpl {
             )
             let response: HTTPResponse
             do {
-                response = try await signalService.urlSessionForMainSignalService().performRequest(request)
+                response = try await networkManager.asyncRequest(request)
             } catch where error.httpStatusCode == 401 {
                 /// The Authorization header was invalid or the provided credentials were
                 /// insufficient to verify ownership of the given phone number. Response

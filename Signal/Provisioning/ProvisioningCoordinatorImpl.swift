@@ -591,7 +591,7 @@ class ProvisioningCoordinatorImpl: ProvisioningCoordinator {
             authPassword: serverAuthToken,
             deviceAttributes: deviceAttributes,
             apnRegistrationId: apnRegistrationId,
-            signalService: self.signalService,
+            networkManager: self.networkManager,
         )
 
         let verifyDeviceResponse: ProvisioningServiceResponses.VerifySecondaryDeviceResponse

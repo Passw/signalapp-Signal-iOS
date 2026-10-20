@@ -30,7 +30,6 @@ public protocol OWSSignalServiceProtocol: AnyObject {
 }
 
 public enum SignalServiceType {
-    case mainSignalService
     case storageService
     case updates
     case updates2
@@ -51,10 +50,6 @@ public extension OWSSignalServiceProtocol {
             endpoint: buildUrlEndpoint(for: signalServiceInfo),
             configuration: configuration,
         )
-    }
-
-    func urlSessionForMainSignalService() -> OWSURLSessionProtocol {
-        buildUrlSession(for: .mainSignalService)
     }
 
     func urlSessionForStorageService() -> OWSURLSessionProtocol {
@@ -86,16 +81,6 @@ extension SignalServiceType {
 
     public func signalServiceInfo() -> SignalServiceInfo {
         switch self {
-        case .mainSignalService:
-            return SignalServiceInfo(
-                baseUrl: URL(string: TSConstants.mainServiceURL)!,
-                assumesHTTP3Capable: false,
-                censorshipCircumventionSupported: true,
-                censorshipCircumventionPathPrefix: TSConstants.serviceCensorshipPrefix,
-                shouldUseSignalCertificate: true,
-                shouldHandleRemoteDeprecation: true,
-                type: self,
-            )
         case .storageService:
             return SignalServiceInfo(
                 baseUrl: URL(string: TSConstants.storageServiceURL)!,

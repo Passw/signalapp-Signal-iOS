@@ -269,6 +269,28 @@ class MockNetworkManager: NetworkManagerProtocol {
     ) async throws -> HTTPResponse {
         return try await asyncRequestHandlers.removeFirst()(request, retryPolicy)
     }
+
+    static func mockResponse(
+        matchingRequest: @escaping (TSRequest) -> Bool,
+        statusCode: Int = 200,
+        headers: HttpHeaders = HttpHeaders(),
+        bodyData: Data? = nil,
+        bodyJson: (any Encodable)? = nil,
+    ) -> ((TSRequest, NetworkManager.RetryPolicy) async throws -> HTTPResponse) {
+        return { request, _ in
+            owsPrecondition(matchingRequest(request))
+            let response = HTTPResponse(
+                requestUrl: request.url,
+                status: statusCode,
+                headers: headers,
+                bodyData: bodyData ?? bodyJson.map({ try! JSONEncoder().encode($0) }),
+            )
+            guard 200 <= statusCode, statusCode <= 399 else {
+                throw response.asError()
+            }
+            return response
+        }
+    }
 }
 
 #endif

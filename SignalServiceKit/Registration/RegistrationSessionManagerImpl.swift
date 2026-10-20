@@ -11,17 +11,17 @@ public class RegistrationSessionManagerImpl: RegistrationSessionManager {
     private let dateProvider: DateProvider
     private let db: any DB
     private let kvStore: NewKeyValueStore
-    private let signalService: OWSSignalServiceProtocol
+    private let networkManager: any NetworkManagerProtocol
 
     public init(
         dateProvider: @escaping DateProvider = Date.provider,
         db: any DB,
-        signalService: OWSSignalServiceProtocol,
+        networkManager: any NetworkManagerProtocol,
     ) {
         self.dateProvider = dateProvider
         self.db = db
         self.kvStore = NewKeyValueStore(collection: KvStore.collectionName)
-        self.signalService = signalService
+        self.networkManager = networkManager
     }
 
     // TODO: make this and other methods resilient to transient network failures by adding
@@ -458,7 +458,7 @@ public class RegistrationSessionManagerImpl: RegistrationSessionManager {
     ) async -> FetchSessionResponse {
         let request = RegistrationRequestFactory.fetchSessionRequest(sessionId: session.id, logger: logger)
         do {
-            let response = try await signalService.urlSessionForMainSignalService().performRequest(request)
+            let response = try await networkManager.asyncRequest(request)
             return handleFetchSessionResponse(
                 sessionAtSendTime: session,
                 statusCode: response.responseStatusCode,
@@ -565,7 +565,7 @@ public class RegistrationSessionManagerImpl: RegistrationSessionManager {
         networkFailureError: ResponseType,
     ) async -> ResponseType {
         do {
-            let response = try await signalService.urlSessionForMainSignalService().performRequest(request)
+            let response = try await networkManager.asyncRequest(request)
             return handler(
                 e164,
                 response.responseStatusCode,

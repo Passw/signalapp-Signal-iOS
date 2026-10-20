@@ -78,6 +78,6 @@ struct TSRequestRedactionTest {
         )
 
         #expect(request.url.relativeString == "v1/verification/session/sessionId")
-        #expect(request.debugDescription == "ID GET v1/verification/session/[REDACTED]")
+        #expect(request.debugDescription == "RG GET v1/verification/session/[REDACTED]")
     }
 }

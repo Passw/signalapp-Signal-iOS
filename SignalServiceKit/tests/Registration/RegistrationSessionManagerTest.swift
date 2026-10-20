@@ -15,26 +15,21 @@ public class RegistrationSessionManagerTest: XCTestCase {
 
     private var db: InMemoryDB!
     private var kvStore: KeyValueStore!
-    private var mockURLSession: TSRequestOWSURLSessionMock!
+    private var networkManager: MockNetworkManager!
 
     override public func setUp() {
         db = InMemoryDB()
-
-        let mockURLSession = TSRequestOWSURLSessionMock()
-        self.mockURLSession = mockURLSession
-        let mockSignalService = OWSSignalServiceMock()
-        mockSignalService.mockUrlSessionBuilder = { _, _, _ in
-            return mockURLSession
-        }
 
         kvStore = KeyValueStore(
             collection: RegistrationSessionManagerImpl.KvStore.collectionName,
         )
 
+        networkManager = MockNetworkManager()
+
         registrationSessionManager = RegistrationSessionManagerImpl(
             dateProvider: { self.date },
             db: db,
-            signalService: mockSignalService,
+            networkManager: networkManager,
         )
     }
 
@@ -60,8 +55,8 @@ public class RegistrationSessionManagerTest: XCTestCase {
         }
         """
 
-        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response(
-            matcher: { $0.url == expectedRequest.url },
+        networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+            matchingRequest: { $0.url == expectedRequest.url },
             statusCode: RegistrationServiceResponses.SubmitVerificationCodeResponseCodes.success.rawValue,
             bodyData: responseJSON.data(using: .utf8),
         ))
@@ -97,8 +92,8 @@ public class RegistrationSessionManagerTest: XCTestCase {
         }
         """
 
-        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response(
-            matcher: { $0.url == expectedRequest.url },
+        networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+            matchingRequest: { $0.url == expectedRequest.url },
             statusCode: RegistrationServiceResponses.SubmitVerificationCodeResponseCodes.success.rawValue,
             bodyData: responseJSON.data(using: .utf8),
         ))
@@ -137,8 +132,8 @@ public class RegistrationSessionManagerTest: XCTestCase {
         }
         """
 
-        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response(
-            matcher: { $0.url == expectedRequest.url },
+        networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+            matchingRequest: { $0.url == expectedRequest.url },
             statusCode: RegistrationServiceResponses.SubmitVerificationCodeResponseCodes.success.rawValue,
             bodyData: responseJSON.data(using: .utf8),
         ))
@@ -182,10 +177,10 @@ public class RegistrationSessionManagerTest: XCTestCase {
         var responseBody = stubWireSession()
         var responseSession = sessionConverter(responseBody)
 
-        mockURLSession.addResponse(
-            forUrlSuffix: beginSessionRequest.url.relativeString,
+        networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+            matchingRequest: { $0.url.relativeString.hasSuffix(beginSessionRequest.url.relativeString) },
             bodyJson: responseBody,
-        )
+        ))
         do {
             let result = await registrationSessionManager.beginOrRestoreSession(
                 e164: e164,
@@ -216,10 +211,10 @@ public class RegistrationSessionManagerTest: XCTestCase {
         responseBody = stubWireSession()
         responseSession = sessionConverter(responseBody)
 
-        mockURLSession.addResponse(
-            forUrlSuffix: fetchSessionRequest.url.relativeString,
+        networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+            matchingRequest: { $0.url.relativeString.hasSuffix(fetchSessionRequest.url.relativeString) },
             bodyJson: responseBody,
-        )
+        ))
         do {
             let result = await registrationSessionManager.beginOrRestoreSession(
                 e164: e164,
@@ -250,14 +245,14 @@ public class RegistrationSessionManagerTest: XCTestCase {
         responseBody = stubWireSession()
         responseSession = sessionConverter(responseBody)
 
-        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
-            url: fetchSessionRequest.url,
+        networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+            matchingRequest: { $0.url.relativeString.hasSuffix(fetchSessionRequest.url.absoluteString) },
             statusCode: RegistrationServiceResponses.FetchSessionResponseCodes.missingSession.rawValue,
         ))
-        mockURLSession.addResponse(
-            forUrlSuffix: beginSessionRequest.url.relativeString,
+        networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+            matchingRequest: { $0.url.relativeString.hasSuffix(beginSessionRequest.url.relativeString) },
             bodyJson: responseBody,
-        )
+        ))
         do {
             let result = await registrationSessionManager.beginOrRestoreSession(
                 e164: e164,
@@ -294,10 +289,10 @@ public class RegistrationSessionManagerTest: XCTestCase {
         responseBody = stubWireSession()
         responseSession = sessionConverter(responseBody)
 
-        mockURLSession.addResponse(
-            forUrlSuffix: beginSessionRequest.url.relativeString,
+        networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+            matchingRequest: { $0.url.relativeString.hasSuffix(beginSessionRequest.url.relativeString) },
             bodyJson: responseBody,
-        )
+        ))
         do {
             let result = await registrationSessionManager.beginOrRestoreSession(
                 e164: e164,
@@ -322,10 +317,10 @@ public class RegistrationSessionManagerTest: XCTestCase {
         responseBody = stubWireSession()
         responseSession = sessionConverter(responseBody, e164: newE164)
 
-        mockURLSession.addResponse(
-            forUrlSuffix: beginSessionRequest.url.relativeString,
+        networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+            matchingRequest: { $0.url.relativeString.hasSuffix(beginSessionRequest.url.relativeString) },
             bodyJson: responseBody,
-        )
+        ))
         do {
             let result = await registrationSessionManager.beginOrRestoreSession(
                 e164: newE164,
@@ -373,19 +368,11 @@ public class RegistrationSessionManagerTest: XCTestCase {
             (.unexpectedError, .genericError, false),
         ]
         for (statusCode, expectedResponse, sessionInBody) in statusCodeResponsePairs {
-            if statusCode == .success {
-                mockURLSession.addResponse(
-                    forUrlSuffix: expectedRequest.url.relativeString,
-                    statusCode: statusCode.rawValue,
-                    bodyJson: sessionInBody ? responseBody : nil,
-                )
-            } else {
-                mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
-                    url: expectedRequest.url,
-                    statusCode: statusCode.rawValue,
-                    bodyJson: sessionInBody ? responseBody : nil,
-                ))
-            }
+            networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+                matchingRequest: { $0.url.relativeString.hasSuffix(expectedRequest.url.relativeString) },
+                statusCode: statusCode.rawValue,
+                bodyJson: sessionInBody ? responseBody : nil,
+            ))
             let result = await registrationSessionManager.fulfillChallenge(
                 for: oldSession,
                 fulfillment: [
@@ -408,11 +395,11 @@ public class RegistrationSessionManagerTest: XCTestCase {
             logger: .empty(),
         )
 
-        mockURLSession.addResponse(
-            forUrlSuffix: expectedRequest.url.relativeString,
+        networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+            matchingRequest: { $0.url.relativeString.hasSuffix(expectedRequest.url.relativeString) },
             statusCode: RegistrationServiceResponses.FulfillChallengeResponseCodes.success.rawValue,
             bodyJson: nil, /* empty json */
-        )
+        ))
         do {
             let result = await registrationSessionManager.fulfillChallenge(
                 for: oldSession,
@@ -449,19 +436,11 @@ public class RegistrationSessionManagerTest: XCTestCase {
             (.unexpectedError, .genericError, false),
         ]
         for (statusCode, expectedResponse, sessionInBody) in statusCodeResponsePairs {
-            if statusCode == .success {
-                mockURLSession.addResponse(
-                    forUrlSuffix: expectedRequest.url.relativeString,
-                    statusCode: statusCode.rawValue,
-                    bodyJson: sessionInBody ? responseBody : nil,
-                )
-            } else {
-                mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
-                    url: expectedRequest.url,
-                    statusCode: statusCode.rawValue,
-                    bodyJson: sessionInBody ? responseBody : nil,
-                ))
-            }
+            networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+                matchingRequest: { $0.url.relativeString.hasSuffix(expectedRequest.url.relativeString) },
+                statusCode: statusCode.rawValue,
+                bodyJson: sessionInBody ? responseBody : nil,
+            ))
             let result = await registrationSessionManager.requestVerificationCode(
                 for: oldSession,
                 transport: [Registration.CodeTransport.sms, .voice].randomElement()!,
@@ -488,8 +467,8 @@ public class RegistrationSessionManagerTest: XCTestCase {
         }
         """
 
-        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
-            url: expectedRequest.url,
+        networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+            matchingRequest: { $0.url == expectedRequest.url },
             statusCode: RegistrationServiceResponses.RequestVerificationCodeResponseCodes.providerFailure.rawValue,
             bodyData: errorResponseJSON.data(using: .utf8),
         ))
@@ -514,8 +493,8 @@ public class RegistrationSessionManagerTest: XCTestCase {
         }
         """
 
-        mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
-            url: expectedRequest.url,
+        networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+            matchingRequest: { $0.url == expectedRequest.url },
             statusCode: RegistrationServiceResponses.RequestVerificationCodeResponseCodes.providerFailure.rawValue,
             bodyData: errorResponseJSON.data(using: .utf8),
         ))
@@ -567,19 +546,11 @@ public class RegistrationSessionManagerTest: XCTestCase {
             (.unexpectedError, .genericError, nil),
         ]
         for (statusCode, expectedResponse, sessionInBody) in statusCodeResponsePairs {
-            if statusCode == .success {
-                mockURLSession.addResponse(
-                    forUrlSuffix: expectedRequest.url.relativeString,
-                    statusCode: statusCode.rawValue,
-                    bodyJson: sessionInBody,
-                )
-            } else {
-                mockURLSession.addResponse(TSRequestOWSURLSessionMock.Response.serviceResponseError(
-                    url: expectedRequest.url,
-                    statusCode: statusCode.rawValue,
-                    bodyJson: sessionInBody,
-                ))
-            }
+            networkManager.asyncRequestHandlers.append(MockNetworkManager.mockResponse(
+                matchingRequest: { $0.url.relativeString.hasSuffix(expectedRequest.url.relativeString) },
+                statusCode: statusCode.rawValue,
+                bodyJson: sessionInBody,
+            ))
             let result = await registrationSessionManager.submitVerificationCode(
                 for: oldSession,
                 code: code,

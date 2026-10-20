@@ -81,10 +81,7 @@ public struct TSRequest: CustomDebugStringConvertible {
                 switch self {
                 case .identified:
                     return .identified
-                case .registration:
-                    // TODO: Migrate registration requests to LibSignal.
-                    throw OWSAssertionError("Can't send registration requests via either web socket.")
-                case .anonymous, .sealedSender, .backup:
+                case .anonymous, .backup, .sealedSender, .registration:
                     return .unidentified
                 }
             }
@@ -92,8 +89,10 @@ public struct TSRequest: CustomDebugStringConvertible {
 
         var logTag: String {
             switch self {
-            case .identified, .registration:
+            case .identified:
                 return "ID"
+            case .registration:
+                return "RG"
             case .anonymous, .sealedSender, .backup:
                 return "UD"
             }
