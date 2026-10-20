@@ -5,7 +5,7 @@
 
 import SignalServiceKit
 
-open class InteractiveSheetViewController: OWSViewController {
+open class InteractiveSheetViewController: OWSViewController, UIGestureRecognizerDelegate, UIViewControllerTransitioningDelegate {
 
     public enum Constants {
         public static let handleSize = CGSize(width: 52, height: 5)
@@ -80,6 +80,8 @@ open class InteractiveSheetViewController: OWSViewController {
             false
         }
     }
+
+    private var glassBackgroundView: UIView?
 
     public weak var externalBackdropView: UIView?
     private lazy var _internalBackdropView = UIView()
@@ -217,15 +219,9 @@ open class InteractiveSheetViewController: OWSViewController {
             let glassBackground = UIVisualEffectView(effect: UIGlassEffect(style: .regular))
             sheetContainerView.insertSubview(glassBackground, at: 0)
             glassBackground.autoPinEdges(toEdgesOf: sheetStackView)
-            let topRadius: CGFloat = if UIDevice.current.hasIPhoneXNotch {
-                40
-            } else {
-                20
-            }
-            glassBackground.cornerConfiguration = .uniformEdges(
-                topRadius: .fixed(topRadius),
-                bottomRadius: .containerConcentric(minimum: 20),
-            )
+            self.glassBackgroundView = glassBackground
+
+            updateGlassBackgroundCornerRadius()
         } else {
             sheetContainerView.backgroundColor = sheetBackgroundColor
         }
@@ -234,6 +230,14 @@ open class InteractiveSheetViewController: OWSViewController {
     override open func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
         dismissalDelegate?.didDismissPresentedSheet()
+    }
+
+    override open func viewLayoutMarginsDidChange() {
+        super.viewLayoutMarginsDidChange()
+
+        if #available(iOS 26, *) {
+            updateGlassBackgroundCornerRadius()
+        }
     }
 
     override open func themeDidChange() {
@@ -254,6 +258,25 @@ open class InteractiveSheetViewController: OWSViewController {
         }
         willDismissInteractively()
         dismiss(animated: true)
+    }
+
+    @available(iOS 26, *)
+    private func updateGlassBackgroundCornerRadius() {
+        guard let glassBackgroundView else { return }
+
+        let minBottomRadius: CGFloat = 20
+        // Make top radius the same as bottom if there are horizontal safe area insets (eg landscape orientation).
+        let topRadius: CGFloat
+        if view.safeAreaInsets.bottom > 0, view.safeAreaInsets.totalWidth == 0 {
+            topRadius = 40
+        } else {
+            topRadius = minBottomRadius
+        }
+        glassBackgroundView.cornerConfiguration = .uniformEdges(
+            topRadius: .fixed(topRadius),
+            bottomRadius: .containerConcentric(minimum: minBottomRadius),
+        )
+
     }
 
     // MARK: - Resize / Interactive Dismiss
@@ -773,11 +796,9 @@ open class InteractiveSheetViewController: OWSViewController {
         }
         return super.accessibilityPerformEscape()
     }
-}
 
-// MARK: -
+    // MARK: - UIGestureRecognizerDelegate
 
-extension InteractiveSheetViewController: UIGestureRecognizerDelegate {
     public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         switch gestureRecognizer {
         case is UITapGestureRecognizer:
@@ -796,9 +817,19 @@ extension InteractiveSheetViewController: UIGestureRecognizerDelegate {
             return false
         }
     }
-}
 
-// MARK: -
+    // MARK: - UIViewControllerTransitioningDelegate
+
+    open func presentationController(forPresented presented: UIViewController, presenting: UIViewController?, source: UIViewController) -> UIPresentationController? {
+        let controller = InteractiveSheetAnimationController(
+            presentedViewController: presented,
+            presenting: presenting,
+            sheetViewController: self,
+            backdropColor: self.backdropColor,
+        )
+        return controller
+    }
+}
 
 private class InteractiveSheetAnimationController: UIPresentationController {
 
@@ -851,18 +882,6 @@ private class InteractiveSheetAnimationController: UIPresentationController {
             presentedView.frame = self.frameOfPresentedViewInContainerView
             presentedView.layoutIfNeeded()
         }, completion: nil)
-    }
-}
-
-extension InteractiveSheetViewController: UIViewControllerTransitioningDelegate {
-    open func presentationController(forPresented presented: UIViewController, presenting: UIViewController?, source: UIViewController) -> UIPresentationController? {
-        let controller = InteractiveSheetAnimationController(
-            presentedViewController: presented,
-            presenting: presenting,
-            sheetViewController: self,
-            backdropColor: self.backdropColor,
-        )
-        return controller
     }
 }
 
