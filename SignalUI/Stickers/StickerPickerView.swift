@@ -3,14 +3,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 
-import SignalServiceKit
+public import SignalServiceKit
 
-protocol StickerPickerViewDelegate: StickerPickerDelegate {
+public protocol StickerPickerViewDelegate: StickerPickerDelegate {
 
     func presentManageStickersView(for: StickerPickerView)
 }
 
-class StickerPickerView: UIView {
+public class StickerPickerView: UIView {
 
     weak var delegate: StickerPickerViewDelegate?
     private let storyStickerConfigation: StoryStickerConfiguration
@@ -19,7 +19,7 @@ class StickerPickerView: UIView {
         stickerPageView.stickerPackCollectionViews
     }
 
-    init(
+    public init(
         delegate: StickerPickerViewDelegate,
         storyStickerConfiguration: StoryStickerConfiguration = .hide,
     ) {
@@ -62,11 +62,11 @@ class StickerPickerView: UIView {
 
     // MARK: Presentation
 
-    func willBePresented() {
+    public func willBePresented() {
         stickerPageView.willBePresented()
     }
 
-    func wasPresented() {
+    public func wasPresented() {
         stickerPageView.wasPresented()
     }
 
@@ -83,12 +83,12 @@ class StickerPickerView: UIView {
     private var quoteReplyPreviewView: UIView?
     private var quoteReplyPreviewStickerInfo: StickerInfo?
 
-    override func layoutMarginsDidChange() {
+    override public func layoutMarginsDidChange() {
         super.layoutMarginsDidChange()
         updateStickerPageViewContentInsets()
     }
 
-    override func layoutSubviews() {
+    override public func layoutSubviews() {
         super.layoutSubviews()
 
         // Necessary to update bottom inset after footer has its final position and size.
@@ -122,7 +122,7 @@ extension StickerPickerView: StickerPacksToolbarDelegate {
 }
 
 extension StickerPickerView: StickerPickerPageViewDelegate {
-    func shouldShowStickerPreview() -> Bool {
+    public func shouldShowStickerPreview() -> Bool {
         delegate?.shouldShowStickerPreview() ?? false
     }
 
@@ -134,7 +134,7 @@ extension StickerPickerView: StickerPickerPageViewDelegate {
         toolbar.packsCollectionView.updateSelections(scrollToSelectedItem: scrollToSelectedItem)
     }
 
-    func didSelectSticker(_ stickerMetadata: any StickerMetadata) {
+    public func didSelectSticker(_ stickerMetadata: any StickerMetadata) {
         delegate?.didSelectSticker(stickerMetadata)
     }
 
@@ -144,7 +144,7 @@ extension StickerPickerView: StickerPickerPageViewDelegate {
 
     // MARK: - Quote Reply preview
 
-    func dismissQuoteReplyPreviewIfNeeded() {
+    public func dismissQuoteReplyPreviewIfNeeded() {
         guard quoteReplyPreviewView != nil else { return }
         handleQuoteReplyPreviewDismiss()
     }

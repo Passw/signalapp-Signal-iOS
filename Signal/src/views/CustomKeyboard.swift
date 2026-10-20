@@ -5,11 +5,11 @@
 
 import SignalServiceKit
 
-open class CustomKeyboard: UIInputView {
+class CustomKeyboard: UIInputView {
 
-    public let contentView = UIView()
+    let contentView = UIView()
 
-    public init() {
+    init() {
         super.init(frame: .zero, inputViewStyle: .default)
 
         addSubview(contentView)
@@ -19,16 +19,16 @@ open class CustomKeyboard: UIInputView {
         allowsSelfSizing = false
     }
 
-    public required init?(coder aDecoder: NSCoder) {
+    required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    open func willPresent() {}
-    open func wasPresented() {}
-    open func willDismiss() {}
-    open func wasDismissed() {}
+    func willPresent() {}
+    func wasPresented() {}
+    func willDismiss() {}
+    func wasDismissed() {}
 
-    override open func willMove(toSuperview newSuperview: UIView?) {
+    override func willMove(toSuperview newSuperview: UIView?) {
         if newSuperview != nil {
             self.willPresent()
         } else {
@@ -36,7 +36,7 @@ open class CustomKeyboard: UIInputView {
         }
     }
 
-    override open func didMoveToSuperview() {
+    override func didMoveToSuperview() {
         // Call wasPresented/wasDismissed on the next run loop,
         // once this view hierarchy change has finished.
         DispatchQueue.main.async { [weak self] in
@@ -51,7 +51,7 @@ open class CustomKeyboard: UIInputView {
 
     // MARK: - Height Management
 
-    public class func setSystemKeyboardHeight(
+    class func setSystemKeyboardHeight(
         _ height: CGFloat,
         forTraitCollection traitCollection: UITraitCollection,
     ) {
@@ -73,11 +73,11 @@ open class CustomKeyboard: UIInputView {
         }
     }
 
-    public func updateHeightForPresentation() {
+    func updateHeightForPresentation() {
         updateHeightConstraint()
     }
 
-    public class func hasCachedHeight(forTraitCollection traitCollection: UITraitCollection) -> Bool {
+    class func hasCachedHeight(forTraitCollection traitCollection: UITraitCollection) -> Bool {
         let key = SizeClassKey(traitCollection: traitCollection)
         return cachedKeyboardHeights[key] != nil
     }
@@ -174,7 +174,7 @@ open class CustomKeyboard: UIInputView {
         heightConstraint.constant = keyboardHeight
     }
 
-    override open func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
         super.traitCollectionDidChange(previousTraitCollection)
 
         // We only care about changes in size classes, which would be triggered by interface rotation.

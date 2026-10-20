@@ -5,7 +5,7 @@
 
 import Photos
 public import SignalServiceKit
-public import SignalUI
+import SignalUI
 
 protocol ConversationInputToolbarDelegate: AnyObject {
 
@@ -3363,16 +3363,16 @@ extension ConversationInputToolbar: ConversationTextViewToolbarDelegate {
 }
 
 extension ConversationInputToolbar: StickerKeyboardDelegate {
-    public func shouldShowStickerPreview() -> Bool {
+    func shouldShowStickerPreview() -> Bool {
         return hasQuotedMessage
     }
 
-    public func stickerKeyboard(_: StickerKeyboard, didSelect stickerInfo: StickerInfo) {
+    func stickerKeyboard(_: StickerKeyboard, didSelect stickerInfo: StickerInfo) {
         AssertIsOnMainThread()
         inputToolbarDelegate?.sendSticker(stickerInfo)
     }
 
-    public func stickerKeyboardDidRequestPresentManageStickersView(_ stickerKeyboard: StickerKeyboard) {
+    func stickerKeyboardDidRequestPresentManageStickersView(_ stickerKeyboard: StickerKeyboard) {
         AssertIsOnMainThread()
         inputToolbarDelegate?.presentManageStickersView()
     }

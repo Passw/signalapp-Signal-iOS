@@ -3,11 +3,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 //
 
-public import SignalServiceKit
+import SignalServiceKit
+import SignalUI
 
 // MARK: - StickerKeyboard
 
-public protocol StickerKeyboardDelegate: AnyObject {
+protocol StickerKeyboardDelegate: AnyObject {
 
     func stickerKeyboardDidRequestPresentManageStickersView(_ stickerKeyboard: StickerKeyboard)
 
@@ -16,13 +17,13 @@ public protocol StickerKeyboardDelegate: AnyObject {
     func shouldShowStickerPreview() -> Bool
 }
 
-public class StickerKeyboard: CustomKeyboard {
+class StickerKeyboard: CustomKeyboard, StickerPickerViewDelegate {
 
-    public weak var delegate: StickerKeyboardDelegate?
+    weak var delegate: StickerKeyboardDelegate?
 
     private lazy var stickerPickerView = StickerPickerView(delegate: self)
 
-    public init(delegate: StickerKeyboardDelegate?) {
+    init(delegate: StickerKeyboardDelegate?) {
         self.delegate = delegate
 
         super.init()
@@ -48,30 +49,28 @@ public class StickerKeyboard: CustomKeyboard {
         ])
     }
 
-    public required init(coder: NSCoder) {
+    required init(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override public func willPresent() {
+    override func willPresent() {
         super.willPresent()
         stickerPickerView.willBePresented()
     }
 
-    override public func wasPresented() {
+    override func wasPresented() {
         super.wasPresented()
         stickerPickerView.wasPresented()
     }
 
-    override public func willDismiss() {
+    override func willDismiss() {
         super.willDismiss()
         stickerPickerView.dismissQuoteReplyPreviewIfNeeded()
     }
-}
 
-// MARK: StickerPacksToolbarDelegate
+    // MARK: StickerPickerViewDelegate
 
-extension StickerKeyboard: StickerPickerViewDelegate {
-    public func shouldShowStickerPreview() -> Bool {
+    func shouldShowStickerPreview() -> Bool {
         return delegate?.shouldShowStickerPreview() ?? false
     }
 
@@ -79,7 +78,7 @@ extension StickerKeyboard: StickerPickerViewDelegate {
         delegate?.stickerKeyboardDidRequestPresentManageStickersView(self)
     }
 
-    public func didSelectSticker(_ stickerMetadata: any StickerMetadata) {
+    func didSelectSticker(_ stickerMetadata: any StickerMetadata) {
         delegate?.stickerKeyboard(self, didSelect: stickerMetadata.stickerInfo)
     }
 }

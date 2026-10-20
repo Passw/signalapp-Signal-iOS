@@ -19,7 +19,7 @@ protocol AttachmentKeyboardDelegate: AnyObject {
     var isGroup: Bool { get }
 }
 
-class AttachmentKeyboard: CustomKeyboard {
+class AttachmentKeyboard: CustomKeyboard, RecentPhotosDelegate, AttachmentFormatPickerDelegate {
 
     weak var delegate: AttachmentKeyboardDelegate?
 
@@ -132,16 +132,15 @@ class AttachmentKeyboard: CustomKeyboard {
         }
         setAuthorizationStatus(authorizationStatus)
     }
-}
 
-extension AttachmentKeyboard: RecentPhotosDelegate {
+    // MARK: - RecentPhotosDelegate
 
     func didSelectRecentPhoto(asset: PHAsset, attachment: PreviewableAttachment, attachmentLimits: OutgoingAttachmentLimits) {
         delegate?.didSelectRecentPhoto(asset: asset, attachment: attachment, attachmentLimits: attachmentLimits)
     }
-}
 
-extension AttachmentKeyboard: AttachmentFormatPickerDelegate {
+    // MARK: - AttachmentFormatPickerDelegate
+
     func didTapPhotos() {
         delegate?.didTapPhotos()
     }
