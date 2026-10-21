@@ -4006,6 +4006,9 @@
 /* Label warning the user that the app will expire today. */
 "EXPIRATION_WARNING_TODAY" = "呢個 Signal 版本今日到期喇。請更新版本，方便繼續通訊。";
 
+/* Description of how and why Signal iOS uses Touch ID/Face ID/Phone Passcode to export your chat history. */
+"EXPORT_CHATS_AUTHENTICATION_REASON" = "Authenticate to export your chat history";
+
 /* action sheet header when re-sending message which failed because of an invalid key signature */
 "FAILED_SENDING_BECAUSE_INVALID_KEY_SIGNATURE" = "傳送唔到訊息，因為 %1$@ 需要更新同埋打開 Signal。";
 
@@ -5141,19 +5144,19 @@
 "INBOX_VIEW_ARCHIVE_MODE_REMINDER" = "當收到新訊息嘅時候，封存咗嘅聊天會移去收件匣。";
 
 /* Title of action allowing user to connect to an existing device */
-"INCOMING_DEVICE_TRANSFER_CHOOSE_EXITING_OLD_DEVICE_ACTION" = "Pair With Existing Device";
+"INCOMING_DEVICE_TRANSFER_CHOOSE_EXITING_OLD_DEVICE_ACTION" = "同現有裝置配對";
 
 /* Body of prompt asking user to select device transfer target. */
-"INCOMING_DEVICE_TRANSFER_CHOOSE_OLD_DEVICE_BODY" = "Choose an existing or new device to pair with. Once paired, your account transfer will begin.";
+"INCOMING_DEVICE_TRANSFER_CHOOSE_OLD_DEVICE_BODY" = "揀要配對嘅現有或者新裝置。配對好之後，帳戶轉移就會開始。";
 
 /* Title of action allowing user to pair a new device transfer peer. */
-"INCOMING_DEVICE_TRANSFER_CHOOSE_OLD_DEVICE_PAIR_NEW_ACTION" = "Pair a New Device";
+"INCOMING_DEVICE_TRANSFER_CHOOSE_OLD_DEVICE_PAIR_NEW_ACTION" = "配對新裝置";
 
 /* Title of prompt asking user to select device transfer target. */
-"INCOMING_DEVICE_TRANSFER_CHOOSE_OLD_DEVICE_TITLE" = "Choose a Device to Pair With";
+"INCOMING_DEVICE_TRANSFER_CHOOSE_OLD_DEVICE_TITLE" = "揀要配對嘅裝置";
 
 /* Title of action allowing user to connect to an existing device */
-"INCOMING_DEVICE_TRANSFER_CHOOSE_SPECIFIC_OLD_DEVICE_ACTION" = "Pair With “%1$@”";
+"INCOMING_DEVICE_TRANSFER_CHOOSE_SPECIFIC_OLD_DEVICE_ACTION" = "同「%1$@」配對";
 
 /* Body of prompt notifying device transfer will continue on other device. */
 "INCOMING_DEVICE_TRANSFER_CONTINUE_BODY" = "喺另一部機度繼續轉移你嘅帳戶。";
@@ -5491,8 +5494,8 @@
 /* Message for an action sheet telling users how to link a device, when trying to open a device-linking URL from the in-app camera. */
 "LINKED_DEVICE_URL_OPENED_ACTION_SHEET_IN_APP_CAMERA_MESSAGE" = "你似乎嘗試緊連結一部裝咗 Signal 嘅裝置。㩒一下繼續，然後㩒一下「連結新裝置」再掃描二維碼。";
 
-/* Bullet point about downloads on the linked devices education sheet. Embeds {{ %1$@ iPad download link, %2$@ desktop download link }} */
-"LINKED_DEVICES_EDUCATION_POINT_DOWNLOADS" = "喺另一部機度，去 %1$@ 安裝 iPad 版 APP 或者 %2$@ 去安裝桌面版 APP。";
+/* Bullet point about a download link on the linked devices education sheet. Embeds {{ %1$@ download link }} */
+"LINKED_DEVICES_EDUCATION_POINT_DOWNLOADS" = "On the device you want to link, visit %1$@ to install Signal";
 
 /* Bullet point about message sync on the linked devices education sheet */
 "LINKED_DEVICES_EDUCATION_POINT_MESSAGES" = "連結之後，Signal 訊息會同手機上嘅 Signal 同步。";
@@ -5501,13 +5504,13 @@
 "LINKED_DEVICES_EDUCATION_POINT_PRIVACY" = "所有連結裝置上面嘅訊息都係私密嘅";
 
 /* Title for the linked device education sheet */
-"LINKED_DEVICES_EDUCATION_TITLE" = "桌面電腦或者 iPad 上嘅 Signal";
+"LINKED_DEVICES_EDUCATION_TITLE" = "Signal on a linked device";
 
 /* Text that appears where the linked device list would be indicating that there are no linked devices. */
 "LINKED_DEVICES_EMPTY_STATE" = "冇連結咗嘅裝置";
 
 /* Description for header of the linked devices list */
-"LINKED_DEVICES_HEADER_DESCRIPTION" = "喺桌面電腦或者 iPad 度用 Signal。";
+"LINKED_DEVICES_HEADER_DESCRIPTION" = "Use this Signal account on another device.";
 
 /* Footer text below the list of currently-linked devices */
 "LINKED_DEVICES_LIST_FOOTER" = "所有裝置上嘅訊息同聊天資料都受到端對端加密保護";
@@ -5579,7 +5582,7 @@
 "LOCAL_BACKUPS_SELECT_HERO_SHEET_TITLE" = "揀你嘅備份資料夾";
 
 /* Message for an action sheet informing the user we were unable to save their local backup location */
-"LOCAL_FILE_BACKUP_CHOOSE_FOLDER_ERROR_MESSAGE" = "Something went wrong and the folder location you selected couldn’t be saved. Try again.";
+"LOCAL_FILE_BACKUP_CHOOSE_FOLDER_ERROR_MESSAGE" = "系統出現咗問題，儲存唔到你揀嘅資料夾位置。再試多次。";
 
 /* Title for an action sheet informing the user we were unable to save their local backup location */
 "LOCAL_FILE_BACKUP_CHOOSE_FOLDER_ERROR_TITLE" = "儲存唔到資料夾位置";
@@ -6220,6 +6223,12 @@
 /* Alert title when user has previously denied media library access */
 "MISSING_MEDIA_LIBRARY_PERMISSION_TITLE" = "Signal 須要存取您嘅相片以使用呢個功能。";
 
+/* Title for a progress modal shown after the user taps Cancel, while the work is being cancelled. */
+"MODAL_CIRCULAR_PROGRESS_CANCELLING_TITLE" = "Cancelling…";
+
+/* Label on a progress modal indicating how far along some work is. Embeds {{ formatted percentage }}. */
+"MODAL_CIRCULAR_PROGRESS_PERCENT_COMPLETE" = "%1$@ complete";
+
 /* Text on a blocking progress screen that indicates that there's a deletion in progress. */
 "MODAL_DELETING" = "刪除緊...…";
 
@@ -6458,7 +6467,7 @@
 "NOT_REGISTERED_BOTTOM_REREGISTER" = "重新註冊";
 
 /* Description for an error indicating you are not registered. */
-"NOT_REGISTERED_ERROR_LOCALIZED_DESCRIPTION" = "You are not registered.";
+"NOT_REGISTERED_ERROR_LOCALIZED_DESCRIPTION" = "你仲未註冊。";
 
 /* Label for 1:1 conversation with yourself. */
 "NOTE_TO_SELF" = "俾自己嘅筆記";
@@ -8024,10 +8033,19 @@
 "REGISTER_WITHOUT_NUMBER" = "唔使電話冧把註冊";
 
 /* Short description for a sheet warning users about an incorrect recovery key used for registration. */
-"REGISTRATION_BACKUP_REGISTRATION_ERROR_INCORRECT_KEY_BODY" = "你可能輸入咗唔啱嘅恢復金鑰。\n\n請確保你係用緊喺當初啟用「Signal 安全備份」嗰陣嘅電話冧把同之前記低嘅恢復金鑰嚟進行註冊。";
+"REGISTRATION_BACKUP_REGISTRATION_ERROR_INCORRECT_KEY_BODY" = "Make sure you’re registering with the same phone number and 64-character recovery key you saved when enabling Signal backups. Backups cannot be recovered without this key.";
 
 /* Title for a sheet warning users about an incorrect recovery key used for registration. */
 "REGISTRATION_BACKUP_REGISTRATION_ERROR_INCORRECT_KEY_TITLE" = "恢復金鑰錯咗";
+
+/* Action label action allowing users to use PIN/SMS for registration. */
+"REGISTRATION_BACKUP_REGISTRATION_ERROR_INCORRECT_KEY_TRY_PIN_ACTION" = "Register Another Way";
+
+/* Message body for a sheet asking users if they would rather use PIN/SMS for registration. */
+"REGISTRATION_BACKUP_REGISTRATION_ERROR_INCORRECT_KEY_TRY_PIN_MESSAGE" = "You can register your account by verifying via an SMS code Signal will send you, or by entering your PIN. After registering, you can try restoring your backup with your recovery key again.";
+
+/* Title for a sheet asking users if they would rather use PIN/SMS for registration. */
+"REGISTRATION_BACKUP_REGISTRATION_ERROR_INCORRECT_KEY_TRY_PIN_TITLE" = "Verify with SMS or PIN?";
 
 /* Body for a sheet warning users about a missing backup. */
 "REGISTRATION_BACKUP_RESTORE_ERROR_BACKUP_NOT_FOUND_BODY" = "呢個恢復金鑰冇相關嘅備份。請你確認一下金鑰冇錯，然後再試一次。";
@@ -8328,6 +8346,30 @@
 
 /* Button to initiate a purchase on the 'Signal Login' screen. The replacement is a localized cost (e.g., $2.99). */
 "REGISTRATION_SIGNAL_LOGIN_PAY" = "俾 %1$@";
+
+/* Text for a bullet point describing that an existing Signal Login can be used to log in and restore an account. */
+"REGISTRATION_SIGNAL_LOGIN_SELECTION_EXISTING_BULLET_RESTORE" = "Login and restore your account";
+
+/* Text for a bullet point thanking the user for supporting Signal by previously buying a Signal Login. */
+"REGISTRATION_SIGNAL_LOGIN_SELECTION_EXISTING_BULLET_THANKS" = "Thanks for supporting Signal";
+
+/* Subtitle for the option to register with a Signal Login the user already owns. */
+"REGISTRATION_SIGNAL_LOGIN_SELECTION_EXISTING_SUBTITLE" = "Use your existing login info";
+
+/* Title for the option to register with a Signal Login the user already owns. */
+"REGISTRATION_SIGNAL_LOGIN_SELECTION_EXISTING_TITLE" = "I have a Signal Login";
+
+/* Text for a bullet point describing that a Signal Login lets you register without a phone number. */
+"REGISTRATION_SIGNAL_LOGIN_SELECTION_PURCHASE_BULLET_NO_PHONE_NUMBER" = "No phone number needed";
+
+/* Text for a bullet point explaining that buying a Signal Login supports Signal, a non-profit. */
+"REGISTRATION_SIGNAL_LOGIN_SELECTION_PURCHASE_BULLET_NON_PROFIT" = "Signal is a non-profit — your purchase helps support our mission";
+
+/* Text for a bullet point describing that a Signal Login comes with a username for messaging and calling. */
+"REGISTRATION_SIGNAL_LOGIN_SELECTION_PURCHASE_BULLET_USERNAME" = "Username for messaging & calls";
+
+/* Subtitle for the option to buy a new Signal Login. */
+"REGISTRATION_SIGNAL_LOGIN_SELECTION_PURCHASE_SUBTITLE" = "One-time purchase";
 
 /* Title text for the 'Signal Login' screen. */
 "REGISTRATION_SIGNAL_LOGIN_TITLE" = "Signal Login";
@@ -8884,6 +8926,9 @@
 /* In-app camera: title for the prompt to turn off multi-mode that will cause previously taken photos to be discarded. */
 "SEND_MEDIA_TURN_OFF_MM_TITLE" = "要關閉連拍模式？";
 
+/* Label for the button to send a sticker message */
+"SEND_STICKER_BUTTON_TITLE" = "Send Sticker";
+
 /* String describing high quality sent media */
 "SENT_MEDIA_QUALITY_HIGH" = "高";
 
@@ -9096,6 +9141,45 @@
 
 /* Title for the 'chats' link in settings. */
 "SETTINGS_CHATS" = "聊天";
+
+/* Title for a button in Chats settings that starts exporting the user's chat history. */
+"SETTINGS_CHATS_EXPORT_BUTTON" = "Export Chats";
+
+/* Title for a button in a sheet shown before the user chooses a folder to export their chat history into, which opens a folder picker. */
+"SETTINGS_CHATS_EXPORT_CHOOSE_FOLDER_SHEET_CHOOSE_BUTTON" = "Choose Folder";
+
+/* Message for a sheet shown before the user chooses a folder to export their chat history into. */
+"SETTINGS_CHATS_EXPORT_CHOOSE_FOLDER_SHEET_MESSAGE" = "Choose a folder in your device’s storage where your chat history will be stored.";
+
+/* Title for a sheet shown before the user chooses a folder to export their chat history into. */
+"SETTINGS_CHATS_EXPORT_CHOOSE_FOLDER_SHEET_TITLE" = "Choose a Folder";
+
+/* Message for a sheet shown after the user's chat history has been exported. */
+"SETTINGS_CHATS_EXPORT_COMPLETE_SHEET_MESSAGE" = "BE CAREFUL where you store your chat export file and do not share it with anyone. Other apps on your device can access it depending on your device’s permissions.";
+
+/* Title for a sheet shown after the user's chat history has been exported. */
+"SETTINGS_CHATS_EXPORT_COMPLETE_SHEET_TITLE" = "Chat Export Complete";
+
+/* Title for a button in a sheet shown after the user's chat history has been exported, which opens the exported folder in the Files app. */
+"SETTINGS_CHATS_EXPORT_COMPLETE_SHEET_VIEW_IN_FILES_BUTTON" = "View in Files";
+
+/* Message for a sheet shown when the user starts exporting their chat history from Chats settings. */
+"SETTINGS_CHATS_EXPORT_CONFIRMATION_SHEET_MESSAGE" = "BE CAREFUL! Do NOT share this file with anyone. Your chat history will be saved to your device and other apps can access it depending on your device’s permissions. Exporting with media will result in a larger file size.";
+
+/* Title for a sheet shown when the user starts exporting their chat history from Chats settings. */
+"SETTINGS_CHATS_EXPORT_CONFIRMATION_SHEET_TITLE" = "Export Chat History?";
+
+/* Title for a button in a sheet shown when the user starts exporting their chat history, which exports their chat history including attachments. */
+"SETTINGS_CHATS_EXPORT_CONFIRMATION_SHEET_WITH_MEDIA_BUTTON" = "Export With Media";
+
+/* Title for a button in a sheet shown when the user starts exporting their chat history, which exports their chat history excluding attachments. */
+"SETTINGS_CHATS_EXPORT_CONFIRMATION_SHEET_WITHOUT_MEDIA_BUTTON" = "Export Without Media";
+
+/* Footer for the section in Chats settings containing a button to export the user's chat history. */
+"SETTINGS_CHATS_EXPORT_FOOTER" = "Export a machine-readable JSON copy of your chats. Disappearing messages will not be included.";
+
+/* Title for a progress modal shown while the user's chat history is being exported. */
+"SETTINGS_CHATS_EXPORT_PROGRESS_TITLE" = "Exporting chats…";
 
 /* No comment provided by engineer. */
 "SETTINGS_CLEAR_HISTORY" = "清除聊天紀錄";
@@ -10176,7 +10260,7 @@
 "SPEAKERPHONE_ON_CONFIRMATION_TOAST_LABEL" = "開咗喇叭";
 
 /* Title for a button to view a sticker pack */
-"STICKER_BUTTON_VIEW_PACK" = "View Pack";
+"STICKER_BUTTON_VIEW_PACK" = "睇下貼圖包";
 
 /* The name for the sticker category 'Featured' */
 "STICKER_CATEGORY_FEATURED_NAME" = "精選";
@@ -10194,31 +10278,31 @@
 "STICKER_MESSAGE_PREVIEW" = "貼圖訊息";
 
 /* Button to confirm a user wants to remove a sticker pack */
-"STICKER_PACK_CONFIRM_REMOVE_BUTTON" = "Remove";
+"STICKER_PACK_CONFIRM_REMOVE_BUTTON" = "移除";
 
 /* Message for a sheet asking the user to confirm they want to remove a sticker pack */
-"STICKER_PACK_CONFIRM_REMOVE_MESSAGE" = "This will remove the sticker pack. You can't add it again without a link or sticker message.";
+"STICKER_PACK_CONFIRM_REMOVE_MESSAGE" = "咁樣會移除貼圖包。日後如果想加返，就要有連結或者貼圖訊息先加到架啦。";
 
 /* Title for a sheet asking the user to confirm they want to remove a sticker pack */
-"STICKER_PACK_CONFIRM_REMOVE_TITLE" = "Remove Sticker Pack?";
+"STICKER_PACK_CONFIRM_REMOVE_TITLE" = "係咪移除貼圖包？";
 
 /* Label for a button to copy the link of a sticker pack */
-"STICKER_PACK_LINK" = "Link";
+"STICKER_PACK_LINK" = "連結";
 
 /* Label for a button to uninstall a sticker pack */
-"STICKER_PACK_REMOVE" = "Remove";
+"STICKER_PACK_REMOVE" = "移除";
 
 /* Label for a button to send a sticker pack */
-"STICKER_PACK_SEND" = "Send";
+"STICKER_PACK_SEND" = "傳送";
 
 /* Label for a button on a sticker-pack share sheet that copies the pack's share link. */
-"STICKER_PACK_SHARE_SHEET_COPY_LINK" = "Copy Link";
+"STICKER_PACK_SHARE_SHEET_COPY_LINK" = "複製連結";
 
 /* Text describing what you can do with a sticker pack link, on a sheet for sharing it. */
-"STICKER_PACK_SHARE_SHEET_HEADER" = "Anyone with this link can add and share this sticker pack.";
+"STICKER_PACK_SHARE_SHEET_HEADER" = "任何有呢條拎嘅人都可以加同分享呢個貼圖包。";
 
 /* Label for a button on a sticker-pack share sheet that sends the pack in Signal. */
-"STICKER_PACK_SHARE_SHEET_SEND_IN_SIGNAL" = "Send in Signal";
+"STICKER_PACK_SHARE_SHEET_SEND_IN_SIGNAL" = "喺 Signal 發送";
 
 /* Message when trying to show a sticker that has expired and is unavailable for download */
 "STICKER_UNAVAILABLE_MESSAGE_LABEL" = "貼圖已經冇咗";
@@ -10227,7 +10311,7 @@
 "STICKER_UNAVAILABLE_SHEET_TITLE" = "貼圖已經冇咗";
 
 /* Label for the 'install sticker pack' button. */
-"STICKERS_INSTALL_BUTTON" = "Add Stickers";
+"STICKERS_INSTALL_BUTTON" = "加貼圖";
 
 /* Title for the 'available built-in stickers' section of the 'manage stickers' view. */
 "STICKERS_MANAGE_VIEW_AVAILABLE_BUILT_IN_PACKS_SECTION_TITLE" = "Signal 畫家系列";
