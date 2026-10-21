@@ -221,6 +221,8 @@ final class ContactSupportViewController: OWSTableViewController2, TextViewWithP
             debugLogPolicy: logPolicy,
             hasRecentChallenge: logDumper.challengeReceivedRecently(),
             backupPlan: logDumper.backupPlan(),
+            deviceCount: logDumper.deviceCount(),
+            localDeviceType: logDumper.localDeviceType(),
         )
 
         showSpinnerOnNextButton = true

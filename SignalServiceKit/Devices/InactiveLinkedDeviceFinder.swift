@@ -14,12 +14,6 @@ public struct InactiveLinkedDevice: Equatable {
 /// come online in a long time and are at risk of expiring (and being unlinked)
 /// soon.
 public protocol InactiveLinkedDeviceFinder {
-    /// At most once per day, re-fetch our linked device state.
-    ///
-    /// - Note
-    /// This method does nothing if invoked from a linked device.
-    func refreshLinkedDeviceStateIfNecessary() async throws
-
     /// Find the user's "least active" linked device, i.e. their linked device
     /// that was last seen longest ago.
     ///
@@ -45,9 +39,6 @@ public protocol InactiveLinkedDeviceFinder {
 
 class InactiveLinkedDeviceFinderImpl: InactiveLinkedDeviceFinder {
     private enum Constants {
-        /// How long we should wait between device state refreshes.
-        static let intervalForDeviceRefresh: TimeInterval = .day
-
         /// How long before a device expires it is considered "inactive".
         static let intervalBeforeExpirationConsideredInactive: TimeInterval = .week
     }
@@ -58,7 +49,6 @@ class InactiveLinkedDeviceFinderImpl: InactiveLinkedDeviceFinder {
 
     private let dateProvider: DateProvider
     private let db: any DB
-    private let deviceService: OWSDeviceService
     private let deviceStore: OWSDeviceStore
     private let kvStore: KeyValueStore
     private let remoteConfigProvider: any RemoteConfigProvider
@@ -72,50 +62,19 @@ class InactiveLinkedDeviceFinderImpl: InactiveLinkedDeviceFinder {
         return max(0, remoteConfigProvider.currentConfig().messageQueueTime - Constants.intervalBeforeExpirationConsideredInactive)
     }
 
-    private let logger = PrefixedLogger(prefix: "InactiveLinkedDeviceFinder")
-
     init(
         dateProvider: @escaping DateProvider,
         db: any DB,
-        deviceService: OWSDeviceService,
         deviceStore: OWSDeviceStore,
         remoteConfigProvider: any RemoteConfigProvider,
         tsAccountManager: TSAccountManager,
     ) {
         self.dateProvider = dateProvider
         self.db = db
-        self.deviceService = deviceService
         self.deviceStore = deviceStore
         self.kvStore = KeyValueStore(collection: "InactiveLinkedDeviceFinderImpl")
         self.remoteConfigProvider = remoteConfigProvider
         self.tsAccountManager = tsAccountManager
-    }
-
-    func refreshLinkedDeviceStateIfNecessary() async throws {
-        let shouldSkip = db.read { tx -> Bool in
-            if kvStore.hasValue(StoreKeys.isPermanentlyDisabled, transaction: tx) {
-                // Finder is permanently disabled, no need to refresh.
-                return true
-            }
-
-            if !tsAccountManager.registrationState(tx: tx).isRegisteredPrimaryDevice {
-                // Only refresh state on primaries.
-                return true
-            }
-
-            return false
-        }
-
-        if shouldSkip {
-            return
-        }
-
-        do {
-            _ = try await deviceService.refreshDevices()
-        } catch {
-            logger.warn("Failed to refresh devices! \(error)")
-            throw error
-        }
     }
 
     func findLeastActiveLinkedDevice(tx: DBReadTransaction) -> InactiveLinkedDevice? {

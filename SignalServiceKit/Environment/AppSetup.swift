@@ -1735,7 +1735,6 @@ extension AppSetup.GlobalsContinuation {
         let inactiveLinkedDeviceFinder = InactiveLinkedDeviceFinderImpl(
             dateProvider: dateProvider,
             db: db,
-            deviceService: deviceService,
             deviceStore: deviceStore,
             remoteConfigProvider: remoteConfigManager,
             tsAccountManager: tsAccountManager,

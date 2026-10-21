@@ -192,7 +192,12 @@ public class Cron {
                 case .success(true), .failure:
                     // We ran or hit a terminal error while trying to run; mark the job as
                     // completed so that we wait for `approximateInterval` before retrying.
-                    Logger.info("job \(uniqueKey) reached terminal result: \(result)")
+                    switch result {
+                    case .success:
+                        Logger.info("job \(uniqueKey) reached terminal result: \(result)")
+                    case .failure:
+                        Logger.warn("job \(uniqueKey) reached terminal result: \(result)")
+                    }
                     await db.awaitableWrite { tx in
                         store.setMostRecentDate(Date(), jitter: approximateInterval / Self.jitterFactor, tx: tx)
                     }

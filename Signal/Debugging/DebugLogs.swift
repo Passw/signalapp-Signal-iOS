@@ -13,6 +13,7 @@ struct DebugLogDumper {
     fileprivate var appVersion: any AppVersion
     fileprivate var backupPlanManager: (any BackupPlanManager)?
     fileprivate var db: (any DB)?
+    fileprivate var deviceStore: OWSDeviceStore?
 
     static func preLaunch() -> Self {
         return Self(appVersion: AppVersionImpl.shared)
@@ -24,6 +25,7 @@ struct DebugLogDumper {
             appVersion: AppVersionImpl.shared,
             backupPlanManager: DependenciesBridge.shared.backupPlanManager,
             db: DependenciesBridge.shared.db,
+            deviceStore: DependenciesBridge.shared.deviceStore,
         )
     }
 
@@ -45,6 +47,26 @@ struct DebugLogDumper {
 
         return db.read { tx in
             backupPlanManager.backupPlan(tx: tx)
+        }
+    }
+
+    func deviceCount() -> Int? {
+        guard let db, let deviceStore else {
+            return nil
+        }
+
+        return db.read { tx in
+            deviceStore.fetchAll(tx: tx).count
+        }
+    }
+
+    func localDeviceType() -> DeviceType? {
+        guard let db, let accountManager else {
+            return nil
+        }
+
+        return db.read { tx in
+            accountManager.registrationState(tx: tx).deviceType
         }
     }
 
@@ -223,6 +245,8 @@ final class DebugLogs {
                                 logUrl: url,
                                 hasRecentChallenge: self.dumper.challengeReceivedRecently(),
                                 backupPlan: self.dumper.backupPlan(),
+                                deviceCount: self.dumper.deviceCount(),
+                                localDeviceType: self.dumper.localDeviceType(),
                             )
                         }
                         continuation.resume()

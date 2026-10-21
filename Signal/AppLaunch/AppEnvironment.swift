@@ -250,13 +250,13 @@ public class AppEnvironment: NSObject {
             operation: { _ = try await usernameValidationManager.validateUsername() },
         )
 
-        let inactiveLinkedDeviceFinder = DependenciesBridge.shared.inactiveLinkedDeviceFinder
+        let deviceService = DependenciesBridge.shared.deviceService
         cron.schedulePeriodically(
             uniqueKey: .fetchDevices,
             approximateInterval: .day,
             mustBeRegistered: true,
             mustBeConnected: true,
-            operation: { try await inactiveLinkedDeviceFinder.refreshLinkedDeviceStateIfNecessary() },
+            operation: { _ = try await deviceService.refreshDevices() },
         )
 
         cron.schedulePeriodically(

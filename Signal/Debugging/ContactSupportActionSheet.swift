@@ -57,6 +57,8 @@ enum ContactSupportActionSheet {
                 debugLogPolicy: .requireUpload(logs),
                 hasRecentChallenge: logDumper.challengeReceivedRecently(),
                 backupPlan: logDumper.backupPlan(),
+                deviceCount: logDumper.deviceCount(),
+                localDeviceType: logDumper.localDeviceType(),
             )
 
             ModalActivityIndicatorViewController.present(
@@ -95,6 +97,8 @@ enum ContactSupportActionSheet {
                         logUrl: nil,
                         hasRecentChallenge: logDumper.challengeReceivedRecently(),
                         backupPlan: logDumper.backupPlan(),
+                        deviceCount: logDumper.deviceCount(),
+                        localDeviceType: logDumper.localDeviceType(),
                     )
                 } catch {
                     showError(error, emailFilter: emailFilter, logDumper: logDumper, fromViewController: fromViewController)
