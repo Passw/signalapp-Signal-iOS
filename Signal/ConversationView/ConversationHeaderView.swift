@@ -78,7 +78,12 @@ class ConversationHeaderView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
 
-        translatesAutoresizingMaskIntoConstraints = false
+        // Fixed size for "Verified" checkmark.
+        titleIconView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            titleIconView.heightAnchor.constraint(equalToConstant: 16),
+            titleIconView.widthAnchor.constraint(equalTo: titleIconView.heightAnchor),
+        ])
 
         let titleColumns = UIStackView(arrangedSubviews: [titleLabel, titleIconView])
         titleColumns.spacing = 5
@@ -93,29 +98,45 @@ class ConversationHeaderView: UIView {
         textRows.distribution = .fillProportionally
 
         let rootStack = UIStackView(arrangedSubviews: [avatarView, textRows])
-        rootStack.directionalLayoutMargins = .init(hMargin: 0, vMargin: 4)
-        if #available(iOS 26, *) {
-            // Default iOS 26 spacing between round back button and this view's leading edge is 12 pts.
-            // We want 16 pts between back button and profile picture.
-            rootStack.directionalLayoutMargins.leading = 4
-        }
         rootStack.isLayoutMarginsRelativeArrangement = true
         rootStack.axis = .horizontal
         rootStack.alignment = .center
-        // Larger profile picture on iOS 26 requires larger padding on both sides.
-        rootStack.spacing = if #available(iOS 26, *) { 12 } else { 8 }
+        rootStack.spacing = 8
 
-        addSubview(rootStack)
-        rootStack.translatesAutoresizingMaskIntoConstraints = false
-        titleIconView.translatesAutoresizingMaskIntoConstraints = false
+        let rootView: UIView
+        if #available(iOS 26, *) {
+            rootStack.directionalLayoutMargins = .init(top: 2, leading: 2, bottom: 2, trailing: 16)
+            rootStack.heightAnchor.constraint(equalToConstant: 44).isActive = true
+
+            let glassEffect = UIGlassEffect(style: .regular)
+            glassEffect.isInteractive = true
+            let glassEffectView = UIVisualEffectView(effect: glassEffect)
+            glassEffectView.clipsToBounds = true
+            glassEffectView.cornerConfiguration = .capsule()
+
+            rootStack.translatesAutoresizingMaskIntoConstraints = false
+            glassEffectView.contentView.addSubview(rootStack)
+            NSLayoutConstraint.activate([
+                rootStack.topAnchor.constraint(equalTo: glassEffectView.topAnchor),
+                rootStack.leadingAnchor.constraint(equalTo: glassEffectView.leadingAnchor),
+                rootStack.trailingAnchor.constraint(equalTo: glassEffectView.trailingAnchor),
+                rootStack.bottomAnchor.constraint(equalTo: glassEffectView.bottomAnchor),
+            ])
+
+            rootView = glassEffectView
+        } else {
+            rootStack.directionalLayoutMargins = .init(hMargin: 0, vMargin: 4)
+
+            rootView = rootStack
+        }
+
+        addSubview(rootView)
+        rootView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            titleIconView.heightAnchor.constraint(equalToConstant: 16),
-            titleIconView.widthAnchor.constraint(equalTo: titleIconView.heightAnchor),
-
-            rootStack.topAnchor.constraint(equalTo: topAnchor),
-            rootStack.leadingAnchor.constraint(equalTo: leadingAnchor),
-            rootStack.trailingAnchor.constraint(equalTo: trailingAnchor),
-            rootStack.bottomAnchor.constraint(equalTo: bottomAnchor),
+            rootView.topAnchor.constraint(equalTo: topAnchor),
+            rootView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            rootView.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
+            rootView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
 
         // Embed a small glass view behind the avatar so that it's never visible to the user.
@@ -145,12 +166,7 @@ class ConversationHeaderView: UIView {
             )
         }
 
-        if #available(iOS 26, *) {
-            heightAnchor.constraint(greaterThanOrEqualToConstant: 44).isActive = true
-        }
-
-        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(didTapView))
-        rootStack.addGestureRecognizer(tapGesture)
+        rootView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(didTapView)))
     }
 
     required init(coder: NSCoder) {
@@ -221,14 +237,15 @@ class ConversationHeaderView: UIView {
 
     @objc
     private func didTapView(tapGesture: UITapGestureRecognizer) {
-        guard tapGesture.state == .recognized else {
+        guard let delegate, tapGesture.state == .recognized else {
             return
         }
 
         if avatarView.bounds.contains(tapGesture.location(in: avatarView)) {
-            self.delegate?.didTapConversationHeaderViewAvatar(self)
-        } else {
-            self.delegate?.didTapConversationHeaderView(self)
+            delegate.didTapConversationHeaderViewAvatar(self)
+            return
         }
+
+        delegate.didTapConversationHeaderView(self)
     }
 }
