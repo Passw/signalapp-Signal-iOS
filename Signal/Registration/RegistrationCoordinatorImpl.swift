@@ -306,6 +306,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         switch method {
         case .declined:
             inMemoryState.hasSkippedRestoreFromMessageBackup = true
+            inMemoryState.shouldRestoreSVRMasterKeyAfterRegistration = true
             inMemoryState.needsToAskForDeviceTransfer = false
             deps.db.write { tx in
                 updatePersistedState(tx) {
@@ -608,6 +609,17 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         }
     }
 
+    private func switchFromRecoveryKeyPathToSvrPath() {
+        inMemoryState.askForPinDuringReregistration = true
+        inMemoryState.regRecoveryPw = nil
+        inMemoryState.reglockToken = nil
+        db.write { tx in
+            updatePersistedState(tx) {
+                $0.restoreMode = nil
+            }
+        }
+    }
+
     @MainActor
     public func confirmRestoreFromBackup(
         progress: OWSSequentialProgressRootSink<BackupRestoreProgressPhase>,
@@ -855,7 +867,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 // Can't currently restore, so show an error and return to the restore confirm screen
                 inMemoryState.restoreFromBackupProgressSink = nil
                 return
-            case .incorrectRecoveryKey, .skipRestore:
+            case .incorrectRecoveryKey, .skipRestore, .fallbackFromRecoveryKey:
                 // By this point, it's really too late to do anything but skip the backup and continue
                 logger.warn("Giving up on the backup restore; continuing without it")
                 await db.awaitableWrite { tx in
@@ -1097,6 +1109,8 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
         /// multiple backups exist at the picked location. If `nil`, the most
         /// recent backup is used.
         var selectedLocalBackupDate: Date?
+
+        var numberOfRecoveryKeyTries: Int = 0
     }
 
     private var inMemoryState = InMemoryState()
@@ -1769,7 +1783,7 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
             )
 
             switch step {
-            case .incorrectRecoveryKey, .rateLimited:
+            case .incorrectRecoveryKey, .rateLimited, .fallbackFromRecoveryKey:
                 return .enterRecoveryKey(
                     RegistrationEnterAccountEntropyPoolState(
                         canShowBackButton: persistedState.accountIdentity == nil,
@@ -2356,17 +2370,18 @@ public class RegistrationCoordinatorImpl: RegistrationCoordinator {
                 inMemoryState.accountEntropyPool != nil
             {
                 let result = await self.deps.registrationBackupErrorPresenter.presentError(
-                    error: .recoveryKeyRegistrationFailed,
+                    error: .recoveryKeyRegistrationFailed(attempts: inMemoryState.numberOfRecoveryKeyTries),
                     isQuickRestore: restoreMode == .quickRestore,
                 )
                 switch result {
                 case .skipRestore, .none:
                     owsFailDebug("Encountered unexpected recovery path for incorrect recovery key.")
                     fallthrough
+                case .fallbackFromRecoveryKey:
+                    switchFromRecoveryKeyPathToSvrPath()
+                    return await nextStep()
                 case .incorrectRecoveryKey, .tryAgain:
-                    // If the user entered an incorrect key, remember the restore method and only
-                    // prompt them to correct the key.  If they want to change the restore method,
-                    // they should be able to hit 'back' here to return to the restore method selection.
+                    inMemoryState.numberOfRecoveryKeyTries += 1
                     return .enterRecoveryKey(.init(canShowBackButton: true, canShowNoKeyHelpButton: true))
                 case .restartQuickRestore, .rateLimited:
                     // If restarting the QuickRestore flow, allow the user a chance to

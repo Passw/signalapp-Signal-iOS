@@ -12,7 +12,7 @@ public enum RegistrationBackupRestoreError {
     case generic
     case backupNotFound
     case incorrectRecoveryKey
-    case recoveryKeyRegistrationFailed
+    case recoveryKeyRegistrationFailed(attempts: Int)
     case versionMismatch
     case unretryableSVRBError
     case networkError
@@ -28,6 +28,7 @@ public enum RegistrationBackupErrorNextStep {
     case tryAgain
     case restartQuickRestore
     case rateLimited
+    case fallbackFromRecoveryKey
 }
 
 public protocol RegistrationCoordinatorBackupErrorPresenter {
@@ -328,6 +329,57 @@ public class RegistrationCoordinatorBackupErrorPresenterImpl:
             })
             actions.append(ActionSheetAction(title: skipRestoreString) { _ in
                 continuation.resume(returning: .skipRestore)
+            })
+        case .recoveryKeyRegistrationFailed(let attempts) where attempts > 0:
+            title = OWSLocalizedString(
+                "REGISTRATION_BACKUP_REGISTRATION_ERROR_INCORRECT_KEY_TITLE",
+                comment: "Title for a sheet warning users about an incorrect recovery key used for registration.",
+            )
+            message = OWSLocalizedString(
+                "REGISTRATION_BACKUP_REGISTRATION_ERROR_INCORRECT_KEY_BODY",
+                comment: "Short description for a sheet warning users about an incorrect recovery key used for registration.",
+            )
+            let registerAnotherWayTitle = OWSLocalizedString(
+                "REGISTRATION_BACKUP_REGISTRATION_ERROR_INCORRECT_KEY_TRY_PIN_ACTION",
+                comment: "Action label action allowing users to use PIN/SMS for registration.",
+            )
+
+            actions.append(ActionSheetAction(title: CommonStrings.tryAgainButton) { _ in
+                continuation.resume(returning: .tryAgain)
+            })
+            actions.append(ActionSheetAction(title: registerAnotherWayTitle) { _ in
+                // Present a sheet, with an option that presents another sheet.
+                presenter.dismiss(animated: true) {
+                    let childTitle = OWSLocalizedString(
+                        "REGISTRATION_BACKUP_REGISTRATION_ERROR_INCORRECT_KEY_TRY_PIN_TITLE",
+                        comment: "Title for a sheet asking users if they would rather use PIN/SMS for registration.",
+                    )
+                    let childMessage = OWSLocalizedString(
+                        "REGISTRATION_BACKUP_REGISTRATION_ERROR_INCORRECT_KEY_TRY_PIN_MESSAGE",
+                        comment: "Message body for a sheet asking users if they would rather use PIN/SMS for registration.",
+                    )
+                    let childActionSheet = ActionSheetController(title: childTitle, message: childMessage)
+                    childActionSheet.addAction(ActionSheetAction(title: CommonStrings.continueButton) { _ in
+                        continuation.resume(returning: .fallbackFromRecoveryKey)
+                    })
+                    childActionSheet.addAction(ActionSheetAction(title: CommonStrings.cancelButton) { _ in
+                        continuation.resume(returning: .tryAgain)
+                    })
+                    OWSActionSheets.showActionSheet(childActionSheet, fromViewController: presenter)
+                }
+            })
+            actions.append(ActionSheetAction(title: CommonStrings.help) { _ in
+                self.presentSupportArticle(
+                    url: URL.Support.backups,
+                    presenter: presenter,
+                ) {
+                    self.presentError(
+                        error: error,
+                        isQuickRestore: isQuickRestore,
+                        from: presenter,
+                        continuation: continuation,
+                    )
+                }
             })
         case .recoveryKeyRegistrationFailed:
             title = OWSLocalizedString(
