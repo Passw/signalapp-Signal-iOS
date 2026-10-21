@@ -179,6 +179,9 @@ class ConversationSettingsViewController: OWSTableViewController2, BadgeCollecti
         defaultSeparatorInsetLeading = Self.cellHInnerMargin + 24 + OWSTableItem.iconSpacing
 
         tableView.register(ContactTableViewCell.self, forCellReuseIdentifier: ContactTableViewCell.reuseIdentifier)
+        if #available(iOS 26, *) {
+            tableView.topEdgeEffect.style = .soft
+        }
 
         observeNotifications()
 
