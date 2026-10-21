@@ -1186,7 +1186,7 @@ public class AttachmentDownloadManagerImpl: AttachmentDownloadManager {
 
             let shouldDeriveAudioDetails: Bool = switch record.sourceType {
             case .transitTier:
-                DebugFlags.audioDeriveDetailsOnDownload.get()
+                false
             case .mediaTierFullsize, .mediaTierThumbnail:
                 DebugFlags.audioDeriveDetailsFromBackups.get()
             }

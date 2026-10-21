@@ -71,10 +71,6 @@ public enum BuildFlags {
     /// `audioDetails` arguments from Attachment methods, for example because we
     /// may only ever then pass `nil` to those arguments.
     public enum AudioWaveforms {
-        // Turn this off once enough clients are sending audio waveforms and
-        // durations in AttachmentPointer. Then, delete dead code.
-        public static let deriveAudioDetailsOnDownload = true
-
         // Turn this off once enough clients will have populated their Backups
         // with waveform samples. See `AudioWaveformFileMigrator`. Then, delete
         // dead code.
@@ -328,12 +324,6 @@ public enum DebugFlags {
 
     // MARK: - TestableFlag: Audio
 
-    public static let audioDeriveDetailsOnDownload = TestableFlag<Bool>(
-        BuildFlags.AudioWaveforms.deriveAudioDetailsOnDownload,
-        title: "Derive audio details on download",
-        details: "Compute waveforms and durations for downloaded audio attachments, rather than relying on sender-provided values.",
-    )
-
     public static let audioDeriveDetailsFromBackups = TestableFlag<Bool>(
         BuildFlags.AudioWaveforms.deriveAudioDetailsFromBackups,
         title: "Derive audio details from Backups",
@@ -341,7 +331,6 @@ public enum DebugFlags {
     )
 
     public static let audioTestableFlags: [AnyTestableFlag] = [
-        audioDeriveDetailsOnDownload,
         audioDeriveDetailsFromBackups,
     ]
 }
