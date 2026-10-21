@@ -617,13 +617,9 @@ public struct AttachmentStore {
         }
     }
 
-    /// - Parameter audioDetails
-    /// Details derived from the downloaded file. Ignored if the attachment
-    /// already has details, for example from the sender.
     public func updateLocalFileBackupAttachmentAsTransferred(
         attachment: Attachment,
         streamInfo: Attachment.StreamInfo,
-        audioDetails: Attachment.AudioDetails?,
         tx: DBWriteTransaction,
     ) {
         guard fetch(id: attachment.id, tx: tx) != nil else {
@@ -633,7 +629,6 @@ public struct AttachmentStore {
         }
 
         attachment.streamInfo = streamInfo
-        attachment.audioDetails = attachment.audioDetails ?? audioDetails
         attachment.plaintextHash = streamInfo.plaintextHash
 
         let newRecord = Attachment.Record(attachment: attachment)
@@ -642,15 +637,11 @@ public struct AttachmentStore {
         }
     }
 
-    /// - Parameter audioDetails
-    /// Details derived from the downloaded file. Ignored if the attachment
-    /// already has details, for example from the sender.
     public func updateAttachmentAsDownloaded(
         attachment: Attachment,
         sourceType: QueuedAttachmentDownloadRecord.SourceType,
         priority: AttachmentDownloadPriority,
         streamInfo: Attachment.StreamInfo,
-        audioDetails: Attachment.AudioDetails?,
         timestamp: UInt64,
         tx: DBWriteTransaction,
     ) throws(AttachmentInsertError) {
@@ -702,13 +693,11 @@ public struct AttachmentStore {
         switch sourceType {
         case .transitTier:
             attachment.streamInfo = streamInfo
-            attachment.audioDetails = attachment.audioDetails ?? audioDetails
             attachment.plaintextHash = streamInfo.plaintextHash
             attachment.latestTransitTierInfo = latestTransitTierInfo
             attachment.lastFullscreenViewTimestamp = lastFullscreenViewTimestamp ?? attachment.lastFullscreenViewTimestamp
         case .mediaTierFullsize:
             attachment.streamInfo = streamInfo
-            attachment.audioDetails = attachment.audioDetails ?? audioDetails
             attachment.plaintextHash = streamInfo.plaintextHash
             attachment.latestTransitTierInfo = latestTransitTierInfo
             if var mediaTierInfo = attachment.mediaTierInfo {

@@ -1184,19 +1184,11 @@ public class AttachmentDownloadManagerImpl: AttachmentDownloadManager {
                 )
             }
 
-            let shouldDeriveAudioDetails: Bool = switch record.sourceType {
-            case .transitTier:
-                false
-            case .mediaTierFullsize, .mediaTierThumbnail:
-                DebugFlags.audioDeriveDetailsFromBackups.get()
-            }
-
             let pendingAttachment: PendingAttachment
             do {
                 pendingAttachment = try await decrypter.validateAndPrepare(
                     encryptedFileUrl: downloadedFileUrl,
                     validationMetadata: validationMetadata,
-                    shouldDeriveAudioDetails: shouldDeriveAudioDetails,
                 )
             } catch let error {
                 return .unretryableError(OWSAssertionError("Failed to validate: \(error)"))
@@ -1207,7 +1199,6 @@ public class AttachmentDownloadManagerImpl: AttachmentDownloadManager {
                 result = try await attachmentUpdater.updateAttachmentAsDownloaded(
                     attachmentId: attachment.id,
                     pendingAttachment: pendingAttachment,
-                    didDeriveAudioDetails: shouldDeriveAudioDetails,
                     source: record.sourceType,
                     priority: record.priority,
                     timestamp: dateProvider().ows_millisecondsSince1970,
@@ -2038,7 +2029,6 @@ public class AttachmentDownloadManagerImpl: AttachmentDownloadManager {
         func validateAndPrepare(
             encryptedFileUrl: URL,
             validationMetadata: ValidationMetadata,
-            shouldDeriveAudioDetails: Bool,
         ) async throws -> PendingAttachment {
             let attachmentValidator = self.attachmentValidator
             return try await decryptionQueue.runWithThrowingTask {
@@ -2052,7 +2042,6 @@ public class AttachmentDownloadManagerImpl: AttachmentDownloadManager {
                         mimeType: mimeType,
                         renderingFlag: .default,
                         sourceFilename: nil,
-                        shouldDeriveAudioDetails: shouldDeriveAudioDetails,
                     )
                 case .mediaTier(let mimeType, let outerAttachmentKey, let innerDecryptionMetadata, let localEncryptionKey):
                     return try await attachmentValidator.validateBackupMediaFileContents(
@@ -2063,7 +2052,6 @@ public class AttachmentDownloadManagerImpl: AttachmentDownloadManager {
                         mimeType: mimeType,
                         renderingFlag: .default,
                         sourceFilename: nil,
-                        shouldDeriveAudioDetails: shouldDeriveAudioDetails,
                     )
                 }
             }
@@ -2122,7 +2110,6 @@ public class AttachmentDownloadManagerImpl: AttachmentDownloadManager {
         func updateAttachmentAsDownloaded(
             attachmentId: Attachment.IDType,
             pendingAttachment: PendingAttachment,
-            didDeriveAudioDetails: Bool,
             source: QueuedAttachmentDownloadRecord.SourceType,
             priority: AttachmentDownloadPriority,
             timestamp: UInt64,
@@ -2148,12 +2135,6 @@ public class AttachmentDownloadManagerImpl: AttachmentDownloadManager {
 
                 let streamInfo = Attachment.StreamInfo(pendingAttachment: pendingAttachment)
 
-                let derivedAudioDetails: Attachment.AudioDetails? = if didDeriveAudioDetails {
-                    Attachment.AudioDetails(pendingAttachment: pendingAttachment)
-                } else {
-                    nil
-                }
-
                 // Try and update the attachment.
                 do throws(AttachmentInsertError) {
                     try self.attachmentStore.updateAttachmentAsDownloaded(
@@ -2161,7 +2142,6 @@ public class AttachmentDownloadManagerImpl: AttachmentDownloadManager {
                         sourceType: source,
                         priority: priority,
                         streamInfo: streamInfo,
-                        audioDetails: derivedAudioDetails,
                         timestamp: timestamp,
                         tx: tx,
                     )

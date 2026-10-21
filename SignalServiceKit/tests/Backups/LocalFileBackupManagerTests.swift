@@ -637,7 +637,6 @@ struct LocalFileBackupManagerTests {
             attachmentStore.updateLocalFileBackupAttachmentAsTransferred(
                 attachment: staleReference,
                 streamInfo: .mock(),
-                audioDetails: nil,
                 tx: tx,
             )
         }

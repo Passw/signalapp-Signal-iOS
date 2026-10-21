@@ -85,7 +85,6 @@ public class AttachmentContentValidatorImpl: AttachmentContentValidator {
         mimeType: String,
         renderingFlag: AttachmentReference.RenderingFlag,
         sourceFilename: String?,
-        shouldDeriveAudioDetails: Bool,
     ) async throws -> PendingAttachment {
         // Very very first thing: validate the integrity check.
         // Throw if this fails.
@@ -114,7 +113,8 @@ public class AttachmentContentValidatorImpl: AttachmentContentValidator {
             sourceFilename: sourceFilename,
             // We use the sender-provided blurHash.
             shouldComputeBlurHash: false,
-            shouldDeriveAudioDetails: shouldDeriveAudioDetails,
+            // We use the sender-provided audio details.
+            shouldDeriveAudioDetails: false,
         ))
     }
 
@@ -161,7 +161,6 @@ public class AttachmentContentValidatorImpl: AttachmentContentValidator {
         mimeType: String,
         renderingFlag: AttachmentReference.RenderingFlag,
         sourceFilename: String?,
-        shouldDeriveAudioDetails: Bool,
     ) async throws -> PendingAttachment {
 
         // This temp file becomes the new attachment source, and will
@@ -204,7 +203,8 @@ public class AttachmentContentValidatorImpl: AttachmentContentValidator {
             sourceFilename: sourceFilename,
             // We use the blurHash from the Backup proto.
             shouldComputeBlurHash: false,
-            shouldDeriveAudioDetails: shouldDeriveAudioDetails,
+            // We use the audio details from the Backup proto.
+            shouldDeriveAudioDetails: false,
         ))
     }
 
@@ -330,8 +330,8 @@ public class AttachmentContentValidatorImpl: AttachmentContentValidator {
         /// An attachment's blurHash is the sender's responsibility, so we only
         /// compute one for outgoing media.
         let shouldComputeBlurHash: Bool
-        /// Whether to derive audio details from the audio itself. Always true
-        /// for outgoing media; conditional for incoming.
+        /// An attachment's audio details are the sender's responsibility, so
+        /// we only derive them for outgoing media.
         let shouldDeriveAudioDetails: Bool
 
         init(
