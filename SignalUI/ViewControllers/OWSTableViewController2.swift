@@ -342,6 +342,12 @@ open class OWSTableViewController2: OWSViewController, OWSNavigationChildControl
         hasViewAppeared = true
     }
 
+    override open func viewIsAppearing(_ animated: Bool) {
+        super.viewIsAppearing(animated)
+        // Fixes iPads not having the proper width at first presentation
+        self.updateTableMargins()
+    }
+
     private func section(for index: Int) -> OWSTableSection? {
         AssertIsOnMainThread()
 
